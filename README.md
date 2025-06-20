@@ -54,4 +54,23 @@ A powerful MERN-based platform where communities can collaboratively vote, discu
 ---
 
 ## 🗂️ Project Folder Structure
+📦 dcc-court
+├── 📁 backend
+│   ├── 📁 src
+│   │   ├── 📁 controllers → All logic for auth, user, case, comment, vote
+│   │   ├── 📁 middlewares → Auth, role-checking, and error handlers
+│   │   ├── 📁 models → Mongoose schemas (User, Case, Vote, etc.)
+│   │   ├── 📁 routes → Route declarations for all modules
+│   │   ├── 📁 graphql → (To be added) Resolvers and schema definitions
+│   │   ├── 📁 sockets → Real-time Socket.IO logic
+│   │   └── server.js → Entry point for backend
+│   ├── .env → Environment variables
+│   └── package.json → Backend dependencies
+│
+├── 📁 frontend → (To be created next)
+│   └── ... → React + Tailwind + Apollo Client frontend
+│
+├── 📄 README.md → This file
+└── 🐳 docker-compose.yml → Docker orchestration file
+
 
