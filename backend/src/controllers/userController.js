@@ -21,18 +21,20 @@ export const getUserProfile = async (req, res) => {
 // ===========================
 // Update User Profile
 // ===========================
+// ===========================
+// Update Logged-in User Profile
+// ===========================
 export const updateUserProfile = async (req, res) => {
     try {
-        const { username, phone, profilePic } = req.body;
-
         const user = await User.findById(req.user.id);
+
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        if (username) user.username = username;
-        if (phone) user.phone = phone;
-        if (profilePic) user.profilePic = profilePic;
+        // Update fields if provided
+        if (req.body.phone) user.phone = req.body.phone;
+        if (req.file) user.profilePicture = `/uploads/${req.file.filename}`;
 
         await user.save();
 
@@ -41,6 +43,7 @@ export const updateUserProfile = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
 
 // ===========================
 // Update User Role (Admin Only)
@@ -66,21 +69,51 @@ export const updateUserRole = async (req, res) => {
 // ===========================
 // Get User Dashboard
 // ===========================
+// ===========================
+// Get User Dashboard
+// ===========================
 export const getUserDashboard = async (req, res) => {
     try {
         const userId = req.user.id;
 
         const user = await User.findById(userId).select('-password');
-
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Cases filed by the user
         const myCases = await Case.find({ createdBy: userId });
+
+        // Cases filed against the user
+        const casesAgainstMe = await Case.find({ filedAgainst: userId });
+
+        // Votes by user
+        const votedCases = await Case.find({ 'votes.votedBy': userId })
+            .select('title votes')
+            .lean();
+
+        const myVotes = votedCases.flatMap(c => {
+            return c.votes
+                .filter(v => v.votedBy.toString() === userId)
+                .map(v => ({ caseTitle: c.title, vote: v.vote }));
+        });
+
+        // Comments by user
+        const commentedCases = await Case.find({ 'comments.commentedBy': userId })
+            .select('title comments')
+            .lean();
+
+        const myComments = commentedCases.flatMap(c => {
+            return c.comments
+                .filter(cm => cm.commentedBy.toString() === userId)
+                .map(cm => ({ caseTitle: c.title, text: cm.text, date: cm.createdAt }));
+        });
+
+        // Count filed cases this month
         const casesFiledThisMonth = myCases.filter(c => {
-            const caseMonth = new Date(c.createdAt).getMonth();
-            const currentMonth = new Date().getMonth();
-            return caseMonth === currentMonth;
+            const created = new Date(c.createdAt);
+            const now = new Date();
+            return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
         }).length;
 
         const remainingCases = 4 - casesFiledThisMonth;
@@ -88,9 +121,14 @@ export const getUserDashboard = async (req, res) => {
         res.status(200).json({
             user,
             myCases,
+            casesAgainstMe,
+            myVotes,
+            myComments,
             remainingCasesThisMonth: remainingCases >= 0 ? remainingCases : 0
         });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
+
