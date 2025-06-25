@@ -5,8 +5,24 @@ import mongoose from 'mongoose';
 const caseSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
-    evidence: { type: String }, // Evidence file/image URL
+    evidence: { type: String },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    filedAgainst: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // ✅ New field
+
+    status: {
+        type: String,
+        enum: [
+            'Sent',
+            'Viewed',
+            'Rejected',
+            'Accepted',
+            'Published for Voting'
+        ],
+        default: 'Sent'
+    },
+    isApproved: { type: Boolean, default: false },
+    verdict: { type: String },
+
     comments: [
         {
             text: String,
