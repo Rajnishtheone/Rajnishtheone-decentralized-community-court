@@ -1,19 +1,20 @@
 import express from 'express';
-import { 
-    createCase, 
-    getAllCases, 
-    getCaseById, 
-    updateCaseVerdict, 
-    updateCaseStatus 
+import {
+    createCase,
+    getAllCases,
+    getCaseById,
+    updateCaseVerdict,
+    updateCaseStatus
 } from '../controllers/caseController.js';
 
 import { protect } from '../middlewares/authMiddleware.js';
 import { authorizeRoles } from '../middlewares/roleMiddleware.js';
+import { caseCreationLimiter } from '../middlewares/rateLimitMiddleware.js';
 
 const router = express.Router();
 
-// ✅ Any authenticated user can create cases
-router.post('/', protect, createCase);
+// ✅ Any authenticated user can create cases (rate-limited)
+router.post('/', protect, caseCreationLimiter, createCase);
 
 // ✅ Anyone can view approved cases
 router.get('/', getAllCases);
