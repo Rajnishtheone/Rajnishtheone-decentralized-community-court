@@ -19,6 +19,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ✅ Serve uploaded profile images statically
+app.use('/uploads', express.static('uploads'));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
