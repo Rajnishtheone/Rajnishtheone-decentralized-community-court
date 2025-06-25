@@ -1,22 +1,23 @@
-// backend/src/routes/userRoutes.js
-
 import express from 'express';
 import { getUserProfile, updateUserRole, updateUserProfile, getUserDashboard } from '../controllers/userController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 import { authorizeRoles } from '../middlewares/roleMiddleware.js';
+import upload from '../middlewares/uploadMiddleware.js';
+import { downloadCaseAsPDF } from '../controllers/caseController.js';
 
 const router = express.Router();
 
-// ✅ Any logged-in user can get profile
+
+// ✅ Download case as PDF
+router.get('/:id/download', protect, downloadCaseAsPDF);
+
 router.get('/:id', protect, getUserProfile);
-
-// ✅ Any logged-in user can update their profile
-router.put('/update/me', protect, updateUserProfile);
-
-// ✅ Only admin can update user role
 router.put('/:id/role', protect, authorizeRoles('admin'), updateUserRole);
 
-// ✅ Dashboard (shows cases, remaining quota, etc.)
+// ✅ Profile update (with picture)
+router.put('/update/me', protect, upload.single('profilePicture'), updateUserProfile);
+
+// ✅ Dashboard
 router.get('/dashboard/me', protect, getUserDashboard);
 
 export default router;
