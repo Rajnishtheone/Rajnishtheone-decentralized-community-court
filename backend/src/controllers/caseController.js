@@ -45,13 +45,34 @@ export const createCase = async (req, res) => {
 // ===========================
 export const getAllCases = async (req, res) => {
     try {
-        // Only approved cases will be shown to the public
-        const cases = await Case.find({ isApproved: true }).populate('createdBy', 'username email');
-        res.status(200).json(cases);
+        const { search = '', page = 1, limit = 10 } = req.query;
+
+        const query = {
+            isApproved: true,
+            $or: [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+            ]
+        };
+
+        const total = await Case.countDocuments(query);
+        const cases = await Case.find(query)
+            .populate('createdBy', 'username email')
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit));
+
+        res.status(200).json({
+            total,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(total / limit),
+            cases
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
+
 
 // ===========================
 // Get Single Case by ID
@@ -111,6 +132,53 @@ export const updateCaseStatus = async (req, res) => {
         await caseItem.save();
 
         res.status(200).json({ message: 'Case status updated successfully', caseItem });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+import PDFDocument from 'pdfkit';
+import fs from 'fs';
+import path from 'path';
+
+export const downloadCaseAsPDF = async (req, res) => {
+    try {
+        const caseItem = await Case.findById(req.params.id).populate('createdBy', 'username email');
+
+        if (!caseItem) {
+            return res.status(404).json({ message: 'Case not found' });
+        }
+
+        const doc = new PDFDocument();
+        const filename = `case-${caseItem._id}.pdf`;
+        const filePath = path.join('uploads', filename);
+        const stream = fs.createWriteStream(filePath);
+        doc.pipe(stream);
+
+        // Add content
+        doc.fontSize(20).text('Case Details', { underline: true });
+        doc.moveDown();
+        doc.fontSize(14).text(`Title: ${caseItem.title}`);
+        doc.text(`Description: ${caseItem.description}`);
+        doc.text(`Status: ${caseItem.status}`);
+        doc.text(`Verdict: ${caseItem.verdict || 'N/A'}`);
+        doc.text(`Created By: ${caseItem.createdBy.username} (${caseItem.createdBy.email})`);
+        doc.text(`Created At: ${caseItem.createdAt.toLocaleString()}`);
+        doc.end();
+
+        // Stream file when writing completes
+        stream.on('finish', () => {
+            res.download(filePath, filename, (err) => {
+                if (err) {
+                    console.error(err);
+                    res.status(500).json({ error: 'Failed to download PDF' });
+                }
+
+                // Optional: Delete the file after sending
+                fs.unlinkSync(filePath);
+            });
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
