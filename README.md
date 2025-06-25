@@ -99,3 +99,10 @@ A powerful MERN-based platform where communities can collaboratively vote, discu
 ## 📄 License
 
 This project is licensed under Rajnish 😁.
+
+---
+
+## 🗂️ Project Management
+
+📋 **[Development Tracker](https://github.com/Rajnishtheone/dcc-court/issues/1)** — Follow all features in progress, planned tasks, and completed items.
+
