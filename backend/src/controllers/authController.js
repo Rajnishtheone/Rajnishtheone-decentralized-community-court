@@ -3,10 +3,18 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-
+import { sendEmail } from '../utils/emailService.js';
+import { welcomeEmailTemplate } from '../utils/emailTemplates.js';
+import { sendEmail } from '../utils/emailService.js';
+import { welcomeEmailTemplate } from '../utils/emailTemplates.js';
 // ===========================
 // Register Controller
 // ===========================
+import bcrypt from 'bcryptjs';
+import User from '../models/User.js';
+import { sendEmail } from '../utils/emailService.js';
+import { welcomeEmailTemplate } from '../utils/emailTemplates.js';
+
 export const registerUser = async (req, res) => {
     try {
         const { username, email, password, role } = req.body;
@@ -26,13 +34,25 @@ export const registerUser = async (req, res) => {
             username,
             email,
             password: hashedPassword,
-            role // can be 'admin', 'judge', or 'member'
+            role
         });
 
         await newUser.save();
 
+        // ✅ Send welcome email (non-blocking)
+        sendEmail({
+            to: email,
+            subject: '🎉 Welcome to DCC!',
+            html: generateEmailTemplate({
+                title: `Welcome to DCC, ${username}!`,
+                body: `We're excited to have you on board. You can now file, view, and vote on community cases.`
+            })
+        });
+
         res.status(201).json({ message: 'User registered successfully' });
+
     } catch (error) {
+        console.error('Registration error ❌:', error.message);
         res.status(500).json({ error: error.message });
     }
 };
