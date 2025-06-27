@@ -4,6 +4,8 @@ import { protect } from '../middlewares/authMiddleware.js';
 import { authorizeRoles } from '../middlewares/roleMiddleware.js';
 import upload from '../middlewares/uploadMiddleware.js';
 import { downloadCaseAsPDF } from '../controllers/caseController.js';
+import { forgotPassword } from '../controllers/userController.js';
+
 
 const router = express.Router();
 
@@ -19,5 +21,11 @@ router.put('/update/me', protect, upload.single('profilePicture'), updateUserPro
 
 // ✅ Dashboard
 router.get('/dashboard/me', protect, getUserDashboard);
+
+// Forgot Password
+router.post('/forgot-password', forgotPassword);
+
+router.post('/contact', contactUs);
+
 
 export default router;
