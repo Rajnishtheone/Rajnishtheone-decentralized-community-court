@@ -3,7 +3,11 @@
 import User from '../models/User.js';
 import Case from '../models/Case.js';
 
-// ===========================
+
+import crypto from 'crypto';
+import User from '../models/User.js';
+import { sendEmail } from '../utils/emailService.js';
+import { generateEmailTemplate } from '../utils/emailTemplates.js';
 // Get User Profile
 // ===========================
 export const getUserProfile = async (req, res) => {
@@ -130,5 +134,80 @@ export const getUserDashboard = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+};
+
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found with this email' });
+    }
+
+    // Generate token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const tokenExpiry = Date.now() + 3600000; // 1 hour
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = tokenExpiry;
+    await user.save();
+
+    const resetURL = `http://localhost:5173/reset-password/${resetToken}`;
+    const emailHTML = generateEmailTemplate({
+      title: '🔐 Reset Your Password',
+      body: `
+        You requested a password reset. Click the button below to reset your password:<br/><br/>
+        <a href="${resetURL}" style="padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a><br/><br/>
+        If you didn’t request this, please ignore this email.
+      `
+    });
+
+    await sendEmail({
+      to: email,
+      subject: '🔐 Reset Your DCC Password',
+      html: emailHTML
+    });
+
+    res.status(200).json({ message: 'Password reset email sent successfully' });
+
+  } catch (error) {
+    console.error('Forgot password error ❌:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// 📩 Contact Us Email Handler
+import { sendEmail } from '../utils/emailService.js';
+
+export const contactUs = async (req, res) => {
+  try {
+    const { name, email, message } = req.body;
+
+    if (!name || !email || !message) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Admin email to receive messages
+    const adminEmail = 'xavierone0@gmail.com'; // or any real admin email
+
+    await sendEmail({
+      to: adminEmail,
+      subject: '📬 New Contact/Feedback Submission',
+      html: `
+        <h2>New Message from Contact Form</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Message:</strong></p>
+        <p>${message}</p>
+      `,
+    });
+
+    res.status(200).json({ message: 'Message sent successfully. Thank you for contacting us!' });
+  } catch (error) {
+    console.error('Contact error ❌:', error.message);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
 };
 
