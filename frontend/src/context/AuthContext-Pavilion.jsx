@@ -34,8 +34,8 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await api.get('/users/profile')
-      setUser(response.data.user)
+      const response = await api.get('/users/profile/me')
+      setUser(response.data)
       setIsAuthenticated(true)
     } catch (error) {
       localStorage.removeItem('token')
@@ -66,6 +66,14 @@ export const AuthProvider = ({ children }) => {
         },
       })
 
+      // Automatically log in after registration
+      const { token, user } = response.data
+      if (token && user) {
+        localStorage.setItem('token', token)
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        setUser(user)
+        setIsAuthenticated(true)
+      }
       return response.data
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Registration failed')
@@ -117,7 +125,7 @@ export const AuthProvider = ({ children }) => {
         }
       })
 
-      const response = await api.put('/users/profile', formData, {
+      const response = await api.put('/users/update/me', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

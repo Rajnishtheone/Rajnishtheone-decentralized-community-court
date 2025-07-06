@@ -13,6 +13,7 @@ import Analytics from './pages/Analytics'
 import Profile from './pages/Profile'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
+import Verifications from './pages/Verifications'
 
 function App() {
   return (
@@ -55,6 +56,13 @@ function App() {
           <Route path="profile" element={
             <PrivateRoute>
               <Profile />
+            </PrivateRoute>
+          } />
+          
+          {/* Judge/Admin Routes */}
+          <Route path="verifications" element={
+            <PrivateRoute requiredRole={['judge', 'admin']}>
+              <Verifications />
             </PrivateRoute>
           } />
         </Route>
