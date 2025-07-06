@@ -1,3 +1,5 @@
+// backend/src/middlewares/rateLimitMiddleware.js
+
 const rateLimitMap = new Map();
 
 const rateLimiter = (maxRequests, windowMs) => {
@@ -11,7 +13,6 @@ const rateLimiter = (maxRequests, windowMs) => {
 
         const timestamps = rateLimitMap.get(userId);
 
-        // Filter timestamps within window
         const recentRequests = timestamps.filter(ts => now - ts < windowMs);
 
         if (recentRequests.length >= maxRequests) {
@@ -25,4 +26,5 @@ const rateLimiter = (maxRequests, windowMs) => {
     };
 };
 
-export default rateLimiter;
+// ✅ Named Export for reusability
+export const caseCreationLimiter = rateLimiter(3, 60 * 1000); // 3 requests/minute
