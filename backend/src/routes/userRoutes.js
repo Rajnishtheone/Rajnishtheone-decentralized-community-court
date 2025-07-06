@@ -1,20 +1,33 @@
 import express from 'express';
-import { getUserProfile, updateUserRole, updateUserProfile, getUserDashboard } from '../controllers/userController.js';
+import {
+  getUserProfile,
+  getCurrentUserProfile,
+  updateUserRole,
+  updateUserProfile,
+  getUserDashboard,
+  forgotPassword,
+  contactUs,
+  requestJudgeRole,
+  getPendingJudgeRequests,
+  reviewJudgeRequest
+} from '../controllers/userController.js';
+
 import { protect } from '../middlewares/authMiddleware.js';
 import { authorizeRoles } from '../middlewares/roleMiddleware.js';
-import upload from '../middlewares/uploadMiddleware.js';
+import { upload } from '../middlewares/uploadMiddleware.js';
 import { downloadCaseAsPDF } from '../controllers/caseController.js';
-import { forgotPassword } from '../controllers/userController.js';
-
 
 const router = express.Router();
 
+// ✅ Register - handled by auth routes
 
-// ✅ Download case as PDF
-router.get('/:id/download', protect, downloadCaseAsPDF);
+// ✅ Login - handled by auth routes
 
-router.get('/:id', protect, getUserProfile);
-router.put('/:id/role', protect, authorizeRoles('admin'), updateUserRole);
+// ✅ Forgot Password
+router.post('/forgot-password', forgotPassword);
+
+// ✅ Contact Us
+router.post('/contact', contactUs);
 
 // ✅ Profile update (with picture)
 router.put('/update/me', protect, upload.single('profilePicture'), updateUserProfile);
@@ -22,10 +35,24 @@ router.put('/update/me', protect, upload.single('profilePicture'), updateUserPro
 // ✅ Dashboard
 router.get('/dashboard/me', protect, getUserDashboard);
 
-// Forgot Password
-router.post('/forgot-password', forgotPassword);
+// ✅ Download case as PDF
+router.get('/:id/download', protect, downloadCaseAsPDF);
 
-router.post('/contact', contactUs);
+// ✅ Get current user profile
+router.get('/profile/me', protect, getCurrentUserProfile);
 
+// ✅ Get user profile by ID
+router.get('/:id', protect, getUserProfile);
+
+// ✅ Update role (admin only)
+router.put('/:id/role', protect, authorizeRoles('admin'), updateUserRole);
+import cloudinaryUpload from '../middlewares/cloudinaryUpload.js';
+
+router.put('/update/me', protect, cloudinaryUpload.single('profilePicture'), updateUserProfile);
+
+// Judge request routes
+router.post('/request-judge', protect, requestJudgeRole);
+router.get('/pending-judge-requests', protect, authorizeRoles('admin'), getPendingJudgeRequests);
+router.post('/review-judge-request', protect, authorizeRoles('admin'), reviewJudgeRequest);
 
 export default router;
