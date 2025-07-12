@@ -11,6 +11,13 @@ const userSchema = new mongoose.Schema({
     minlength: [3, 'Username must be at least 3 characters'],
     maxlength: [30, 'Username cannot exceed 30 characters']
   },
+  name: { 
+    type: String, 
+    required: [true, 'Name is required'], 
+    trim: true,
+    minlength: [2, 'Name must be at least 2 characters'],
+    maxlength: [50, 'Name cannot exceed 50 characters']
+  },
   email: { 
     type: String, 
     required: [true, 'Email is required'], 
@@ -21,7 +28,7 @@ const userSchema = new mongoose.Schema({
   },
   password: { 
     type: String, 
-    required: [true, 'Password is required'],
+    required: function() { return !this.isGoogleUser; }, // Password not required for Google users
     minlength: [6, 'Password must be at least 6 characters']
   },
   phone: { 
@@ -52,6 +59,16 @@ const userSchema = new mongoose.Schema({
     type: String, 
     enum: ['admin', 'judge', 'member'], 
     default: 'member' 
+  },
+  
+  // Google OAuth fields
+  googleId: {
+    type: String,
+    sparse: true // Allows multiple null values
+  },
+  isGoogleUser: {
+    type: Boolean,
+    default: false
   },
   
   // Judge request fields
@@ -126,5 +143,7 @@ userSchema.pre('save', function(next) {
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ 'judgeRequest.status': 1 });
+userSchema.index({ googleId: 1 });
+userSchema.index({ isGoogleUser: 1 });
 
 export default mongoose.model('User', userSchema);

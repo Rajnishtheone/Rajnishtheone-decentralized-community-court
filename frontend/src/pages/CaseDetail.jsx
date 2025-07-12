@@ -51,8 +51,8 @@ const CaseDetail = () => {
         <div className="border-t pt-4 mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
-              <span className="font-medium text-gray-900">Created by:</span>
-              <p className="text-gray-600">{caseItem.createdBy?.username}</p>
+              <span className="font-medium text-gray-900">Filed by:</span>
+              <p className="text-gray-600">{caseItem.filedBy?.username}</p>
             </div>
             <div>
               <span className="font-medium text-gray-900">Created:</span>

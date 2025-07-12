@@ -1,343 +1,467 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { Scale, Users, Shield, Zap, ArrowRight, Phone, Mail, MapPin } from 'lucide-react'
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Button } from '../components/ui/button';
+import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
+import {
+  Scale,
+  Users,
+  Shield,
+  Gavel,
+  MessageSquare,
+  TrendingUp,
+  CheckCircle,
+  Clock,
+  Star,
+  ArrowRight,
+  Menu,
+  X,
+  Mail,
+} from 'lucide-react';
 
-const Home = () => {
-  const { isAuthenticated, user } = useAuth()
-
-  const features = [
-    {
-      icon: Scale,
-      title: 'Community Justice',
-      description: 'Participate in democratic legal processes where every voice matters.'
-    },
-    {
-      icon: Users,
-      title: 'Collaborative Voting',
-      description: 'Vote on cases with real-time updates and transparent results.'
-    },
-    {
-      icon: Shield,
-      title: 'AI-Powered Insights',
-      description: 'Get intelligent verdict suggestions and case analysis.'
-    },
-    {
-      icon: Zap,
-      title: 'Real-time Updates',
-      description: 'Stay informed with live notifications and case status updates.'
-    }
-  ]
+export default function HomePage() {
+  const { user } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-      
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-background to-purple-50 dark:from-gray-900 dark:via-background dark:to-gray-900 theme-transition">
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border theme-transition">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link to="/" className="flex items-center space-x-2">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
+                <Scale className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                DCC Court
+              </span>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
+                Features
+              </a>
+              <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+                How It Works
+              </a>
+              <a href="#community" className="text-muted-foreground hover:text-foreground transition-colors">
+                Community
+              </a>
+              <a href="#contact" className="text-muted-foreground hover:text-foreground transition-colors">
+                Contact
+              </a>
+              {user ? (
+                <Link to="/dashboard">
+                  <Button variant="outline">Dashboard</Button>
+                </Link>
+              ) : (
+                <Link to="/login">
+                  <Button variant="outline">Login</Button>
+                </Link>
+              )}
+              {user ? (
+                <Link to="/create-case">
+                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    Create Case
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/register">
+                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    Join Community
+                  </Button>
+                </Link>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
+            <button className="md:hidden text-foreground" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
+
+          {/* Mobile Navigation */}
+          {isMenuOpen && (
+            <div className="md:hidden py-4 space-y-4">
+              <a href="#features" className="block text-muted-foreground hover:text-foreground transition-colors">
+                Features
+              </a>
+              <a href="#how-it-works" className="block text-muted-foreground hover:text-foreground transition-colors">
+                How It Works
+              </a>
+              <a href="#community" className="block text-muted-foreground hover:text-foreground transition-colors">
+                Community
+              </a>
+              <a href="#contact" className="block text-muted-foreground hover:text-foreground transition-colors">
+                Contact
+              </a>
+              <div className="flex flex-col space-y-2 pt-4">
+                {user ? (
+                  <>
+                    <Link to="/dashboard">
+                      <Button variant="outline" className="w-full bg-transparent">
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Link to="/create-case">
+                      <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
+                        Create Case
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login">
+                      <Button variant="outline" className="w-full bg-transparent">
+                        Login
+                      </Button>
+                    </Link>
+                    <Link to="/register">
+                      <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
+                        Join Community
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-purple-600/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-              Decentralized
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-                Community Court
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="mb-8">
+            <Badge className="mb-4 bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200">
+              🚀 Decentralized Justice Platform
+            </Badge>
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
+              Community-Driven
+              <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Dispute Resolution
               </span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
-              A modern platform for community-driven dispute resolution. 
-              Transparent, fair, and accessible justice for everyone.
+            <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+              Join a transparent, democratic platform where community members collaborate to resolve disputes fairly.
+              Vote on cases, provide feedback, and help build a more just digital society.
             </p>
-            
-            {!isAuthenticated ? (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  to="/register"
-                  className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  Get Started
-                  <svg className="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {user ? (
+                <Link to="/dashboard">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
                 </Link>
-                <Link
-                  to="/login"
-                  className="inline-flex items-center justify-center px-8 py-4 border-2 border-indigo-600 text-lg font-medium rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-                >
-                  Sign In
+              ) : (
+                <Link to="/register">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    Start Your Journey
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
                 </Link>
-              </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  to="/dashboard"
-                  className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  Go to Dashboard
-                  <svg className="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </Link>
-                <Link
-                  to="/cases"
-                  className="inline-flex items-center justify-center px-8 py-4 border-2 border-indigo-600 text-lg font-medium rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-                >
-                  View Cases
-                </Link>
-              </div>
-            )}
+              )}
+              <Link to="/about">
+                <Button size="lg" variant="outline">
+                  Learn More
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-600">1,247</div>
+              <div className="text-muted-foreground">Cases Resolved</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-purple-600">3,891</div>
+              <div className="text-muted-foreground">Community Members</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-green-600">98.5%</div>
+              <div className="text-muted-foreground">Satisfaction Rate</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-orange-600">24/7</div>
+              <div className="text-muted-foreground">Platform Availability</div>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Features Section */}
-      <div className="py-20 bg-white dark:bg-gray-800">
+      <section id="features" className="py-20 bg-card/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Why Choose DCC Court?
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Our platform combines modern technology with traditional justice principles 
-              to deliver a fair and transparent dispute resolution system.
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Our platform offers a unique approach to dispute resolution that combines community wisdom with AI assistance.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-8 hover:shadow-lg transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Transparent Justice
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                All cases, decisions, and proceedings are publicly accessible, 
-                ensuring complete transparency in the justice process.
-              </p>
-            </div>
+              <CardTitle className="text-xl mb-2">Community-Driven</CardTitle>
+              <CardDescription>
+                Every decision is made by the community through transparent voting and discussion.
+              </CardDescription>
+            </Card>
 
-            {/* Feature 2 */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl p-8 hover:shadow-lg transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Shield className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Community Driven
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Decisions are made by community members and qualified judges, 
-                ensuring diverse perspectives and fair outcomes.
-              </p>
-            </div>
+              <CardTitle className="text-xl mb-2">Secure & Transparent</CardTitle>
+              <CardDescription>
+                All cases and decisions are recorded on the blockchain for complete transparency.
+              </CardDescription>
+            </Card>
 
-            {/* Feature 3 */}
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl p-8 hover:shadow-lg transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Gavel className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Fast & Efficient
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Streamlined processes and digital tools ensure quick resolution 
-                of disputes without compromising on quality or fairness.
-              </p>
-            </div>
+              <CardTitle className="text-xl mb-2">AI-Assisted</CardTitle>
+              <CardDescription>
+                Advanced AI provides insights and suggestions to help make informed decisions.
+              </CardDescription>
+            </Card>
 
-            {/* Feature 4 */}
-            <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-2xl p-8 hover:shadow-lg transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Secure & Private
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Advanced security measures protect sensitive information while 
-                maintaining transparency in the justice process.
-              </p>
-            </div>
+              <CardTitle className="text-xl mb-2">Open Discussion</CardTitle>
+              <CardDescription>
+                Engage in meaningful discussions and provide feedback on cases.
+              </CardDescription>
+            </Card>
 
-            {/* Feature 5 */}
-            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-2xl p-8 hover:shadow-lg transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                AI-Powered Insights
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Advanced AI provides case analysis and verdict suggestions, 
-                helping judges make informed decisions.
-              </p>
-            </div>
+              <CardTitle className="text-xl mb-2">Real-time Updates</CardTitle>
+              <CardDescription>
+                Get instant notifications and updates on case progress and decisions.
+              </CardDescription>
+            </Card>
 
-            {/* Feature 6 */}
-            <div className="bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-2xl p-8 hover:shadow-lg transition-all duration-300">
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-lg flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                </svg>
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Cost Effective
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Reduce legal costs with our affordable dispute resolution platform 
-                that provides professional justice services.
-              </p>
-            </div>
+              <CardTitle className="text-xl mb-2">Fair & Just</CardTitle>
+              <CardDescription>
+                Our system ensures fair treatment and just outcomes for all parties involved.
+              </CardDescription>
+            </Card>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Stats Section */}
-      <div className="py-20 bg-gradient-to-r from-indigo-600 to-purple-600">
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Platform Statistics
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              How It Works
             </h2>
-            <p className="text-xl text-indigo-100 max-w-3xl mx-auto">
-              See how our platform is making a difference in community justice.
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Our simple 4-step process makes dispute resolution accessible to everyone.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">500+</div>
-              <div className="text-indigo-100">Cases Resolved</div>
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary-foreground">1</span>
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">File a Case</h3>
+              <p className="text-muted-foreground">
+                Submit your dispute with all relevant details and evidence.
+              </p>
             </div>
+
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">95%</div>
-              <div className="text-indigo-100">Satisfaction Rate</div>
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary-foreground">2</span>
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Community Review</h3>
+              <p className="text-muted-foreground">
+                Community members review and discuss the case openly.
+              </p>
             </div>
+
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">1000+</div>
-              <div className="text-indigo-100">Community Members</div>
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary-foreground">3</span>
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Vote & Decide</h3>
+              <p className="text-muted-foreground">
+                Members vote on the outcome with AI assistance.
+              </p>
             </div>
+
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">24h</div>
-              <div className="text-indigo-100">Average Resolution Time</div>
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-primary-foreground">4</span>
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Get Resolution</h3>
+              <p className="text-muted-foreground">
+                Receive a fair and transparent resolution to your dispute.
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* CTA Section */}
-      <div className="py-20 bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-            Ready to Experience Better Justice?
-          </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-            Join thousands of community members who trust DCC Court for fair and transparent dispute resolution.
-          </p>
-          
-          {!isAuthenticated ? (
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/register"
-                className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                Join Now - It's Free
-              </Link>
-              <Link
-                to="/login"
-                className="inline-flex items-center justify-center px-8 py-4 border-2 border-indigo-600 text-lg font-medium rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-              >
-                Sign In
-              </Link>
+      {/* Community Section */}
+      <section id="community" className="py-20 bg-card/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Join Our Community
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Be part of a growing community dedicated to fair and transparent justice.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h3 className="text-2xl font-bold text-foreground mb-6">
+                Why Join DCC Court?
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">Make a Difference</h4>
+                    <p className="text-muted-foreground">Help resolve disputes and contribute to a fairer society.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">Learn & Grow</h4>
+                    <p className="text-muted-foreground">Gain insights into dispute resolution and community governance.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">Earn Recognition</h4>
+                    <p className="text-muted-foreground">Build reputation and earn rewards for your contributions.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="h-6 w-6 text-green-600 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">Connect</h4>
+                    <p className="text-muted-foreground">Connect with like-minded individuals who care about justice.</p>
+                  </div>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/cases"
-                className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                Browse Cases
-              </Link>
-              <Link
-                to="/create-case"
-                className="inline-flex items-center justify-center px-8 py-4 border-2 border-indigo-600 text-lg font-medium rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-              >
-                File a Case
-              </Link>
+
+            <div className="bg-card p-8 rounded-2xl shadow-lg">
+              <h3 className="text-2xl font-bold text-foreground mb-6">Community Stats</h3>
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Active Members</span>
+                  <span className="text-2xl font-bold text-foreground">3,891</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Cases Resolved</span>
+                  <span className="text-2xl font-bold text-foreground">1,247</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Success Rate</span>
+                  <span className="text-2xl font-bold text-foreground">98.5%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Average Resolution Time</span>
+                  <span className="text-2xl font-bold text-foreground">2.3 days</span>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Contact Section */}
-      <div className="bg-white dark:bg-zinc-900 py-20 transition-colors duration-300">
+      <section id="contact" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 transition-colors duration-300">
-              Contact Us
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Get in Touch
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto transition-colors duration-300">
-              Get in touch with our team for support or questions.
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Have questions or need support? We're here to help you get started.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 bg-primary-100 dark:bg-primary-900 rounded-lg">
-                  <Phone className="h-8 w-8 text-primary-600 dark:text-primary-400" />
-                </div>
+              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Mail className="h-6 w-6 text-primary-foreground" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 transition-colors duration-300">
-                Phone
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">
-                +1 (555) 123-4567
+              <h3 className="text-xl font-semibold text-foreground mb-2">Email Support</h3>
+              <p className="text-muted-foreground mb-4">
+                Get help via email with detailed responses.
               </p>
+              <a href="mailto:support@dcccourt.com" className="text-primary hover:underline">
+                support@dcccourt.com
+              </a>
             </div>
+
             <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 bg-primary-100 dark:bg-primary-900 rounded-lg">
-                  <Mail className="h-8 w-8 text-primary-600 dark:text-primary-400" />
-                </div>
+              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="h-6 w-6 text-primary-foreground" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 transition-colors duration-300">
-                Email
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">
-                support@dcc.com
+              <h3 className="text-xl font-semibold text-foreground mb-2">Live Chat</h3>
+              <p className="text-muted-foreground mb-4">
+                Chat with our support team in real-time.
               </p>
+              <Link to="/support" className="text-primary hover:underline">
+                Start Chat
+              </Link>
             </div>
+
             <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 bg-primary-100 dark:bg-primary-900 rounded-lg">
-                  <MapPin className="h-8 w-8 text-primary-600 dark:text-primary-400" />
-                </div>
+              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Users className="h-6 w-6 text-primary-foreground" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 transition-colors duration-300">
-                Address
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">
-                123 Justice St, Legal City
+              <h3 className="text-xl font-semibold text-foreground mb-2">Community Forum</h3>
+              <p className="text-muted-foreground mb-4">
+                Connect with other community members.
               </p>
+              <a href="#" className="text-primary hover:underline">
+                Join Forum
+              </a>
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
-  )
-}
-
-export default Home 
+  );
+} 

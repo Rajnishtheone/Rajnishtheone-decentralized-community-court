@@ -21,31 +21,7 @@ export const createCaseSchema = Joi.object({
   priority: Joi.string().valid('Low', 'Medium', 'High', 'Urgent')
     .default('Medium'),
   
-  tags: Joi.array().items(Joi.string().max(50)).max(10),
-  
-  // ✅ NEW: Optional target information
-  targetName: Joi.string().max(100).optional(),
-  targetEmail: Joi.string().email().optional(),
-  targetPhone: Joi.string().pattern(/^[0-9]{10}$/).optional(),
-  targetBuilding: Joi.string().max(100).optional(),
-  targetFlat: Joi.string().max(50).optional(),
-  physicalDescription: Joi.string().max(500).optional(),
-  location: Joi.string().max(200).optional(),
-  timeOfIncident: Joi.string().max(100).optional(),
-  frequency: Joi.string().max(100).optional(),
-  
-  // ✅ LEGACY: Keep for backward compatibility
-  filedAgainst: Joi.string().length(24).optional()
-});
-
-export const verifyCaseSchema = Joi.object({
-  verifiedTargetId: Joi.string().length(24).when('action', {
-    is: 'verify',
-    then: Joi.required(),
-    otherwise: Joi.optional()
-  }),
-  verificationNotes: Joi.string().max(1000).optional(),
-  action: Joi.string().valid('verify', 'reject').required()
+  tags: Joi.array().items(Joi.string().max(50)).max(10)
 });
 
 export const targetResponseSchema = Joi.object({

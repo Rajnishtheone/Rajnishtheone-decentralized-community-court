@@ -30,7 +30,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173', // ✅ change to frontend prod URL
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost:5177', 'http://localhost:5178', 'http://localhost:5179', 'http://localhost:3000'], // Allow multiple ports for development
     credentials: true,
   }
 });
@@ -42,32 +42,56 @@ app.set('io', io);
 // Security Middlewares 🔐
 // ====================
 app.disable('x-powered-by');
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
 // Temporarily disable mongoSanitize due to compatibility issue
 // app.use(mongoSanitize());
 // Temporarily disable xss-clean due to Express 5 compatibility issue
 // app.use(xss());
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+
+// Enhanced CORS configuration
+app.use(cors({ 
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost:5177', 'http://localhost:5178', 'http://localhost:5179', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
 app.use(cookieParser());
 
 // ====================
 // Body Parser + Static Uploads
 // ====================
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve static files with proper CORS headers
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
 
 // ====================
 // Rate Limiting for Auth APIs
 // ====================
 const authLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: 20,
-  message: '⚠️ Too many requests from this IP, please try again later.'
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { error: '⚠️ Too many requests from this IP, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-app.use('/api/users/login', authLimiter);
-app.use('/api/users/register', authLimiter);
+
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 app.use('/api/users/forgot-password', authLimiter);
 
 // ====================
@@ -84,7 +108,22 @@ app.use('/api/analytics', analyticsRoutes);
 // Root Route
 // ====================
 app.get('/', (req, res) => {
-  res.send('✅ DCC Backend API is running...');
+  res.json({ 
+    message: '✅ DCC Backend API is running...',
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ====================
+// Health Check Route
+// ====================
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 // ====================
@@ -110,10 +149,13 @@ const PORT = process.env.PORT || 5000;
 mongoose.connect(process.env.MONGO_URI)
 .then(() => {
   console.log('✅ MongoDB connected successfully');
-  server.listen(PORT, () =>
-    console.log(`🚀 Server running on http://localhost:${PORT}`)
-  );
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📁 Static files served from: ${path.join(__dirname, 'uploads')}`);
+    console.log(`🌐 CORS enabled for: http://localhost:5173`);
+  });
 })
 .catch((err) => {
   console.error('❌ MongoDB connection error:', err.message);
+  process.exit(1);
 });

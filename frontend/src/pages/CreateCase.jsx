@@ -22,7 +22,6 @@ const CreateCase = () => {
       const data = new FormData()
       data.append('title', formData.title)
       data.append('description', formData.description)
-      data.append('filedAgainst', formData.filedAgainst)
       if (selectedFile) {
         data.append('evidence', selectedFile)
       }
@@ -108,26 +107,6 @@ const CreateCase = () => {
             />
             {errors.description && (
               <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="filedAgainst" className="block text-sm font-medium text-gray-700">
-              Filed Against (User ID)
-            </label>
-            <input
-              type="text"
-              id="filedAgainst"
-              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${
-                errors.filedAgainst ? 'border-red-300' : ''
-              }`}
-              placeholder="Enter the user ID of the person being filed against"
-              {...register('filedAgainst', {
-                required: 'Filed against user is required',
-              })}
-            />
-            {errors.filedAgainst && (
-              <p className="mt-1 text-sm text-red-600">{errors.filedAgainst.message}</p>
             )}
           </div>
 

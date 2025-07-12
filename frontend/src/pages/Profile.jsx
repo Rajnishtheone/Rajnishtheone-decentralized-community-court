@@ -1,20 +1,35 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import JudgeRequest from '../components/JudgeRequest'
+import { Edit3, Save, X, Lock, Eye, EyeOff, Gavel } from 'lucide-react'
 
 const Profile = () => {
-  const { user, updateProfile } = useAuth()
+  const { user, updateProfile, changePassword, requestJudgeRole } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [showJudgeRequest, setShowJudgeRequest] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
-  const [previewUrl, setPreviewUrl] = useState(user?.profilePic || '')
   
+  // Helper function to get correct profile picture URL
+  const getProfilePicUrl = (profilePic) => {
+    if (!profilePic) return '/default-avatar.svg'
+    if (profilePic.startsWith('http')) return profilePic
+    if (profilePic.startsWith('/uploads/')) return `http://localhost:5000${profilePic}`
+    return `http://localhost:5000/uploads/${profilePic}`
+  }
+  
+  const [previewUrl, setPreviewUrl] = useState(getProfilePicUrl(user?.profilePic))
+  
+  // Profile form
   const {
-    register,
-    handleSubmit,
-    formState: { errors }
+    register: registerProfile,
+    handleSubmit: handleProfileSubmit,
+    formState: { errors: profileErrors, isDirty },
+    reset: resetProfile,
+    watch: watchProfile
   } = useForm({
     defaultValues: {
       name: user?.name || '',
@@ -26,19 +41,76 @@ const Profile = () => {
     }
   })
 
+  // Password form
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors },
+    reset: resetPassword,
+    watch: watchPassword
+  } = useForm()
+
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  // Update form values and preview URL when user data changes
+  useEffect(() => {
+    if (user) {
+      resetProfile({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        building: user.building || '',
+        flat: user.flat || '',
+        gender: user.gender || 'male'
+      })
+      
+      setPreviewUrl(getProfilePicUrl(user.profilePic))
+    }
+  }, [user, resetProfile])
+
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      setSelectedFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result)
+      // Enforce max file size (2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('Profile image must be less than 2MB')
+        return
       }
-      reader.readAsDataURL(file)
+      // Enforce image aspect ratio (square)
+      const img = new window.Image()
+      img.onload = () => {
+        if (Math.abs(img.width - img.height) > 20) {
+          toast.error('Profile image should be roughly square')
+          return
+        }
+        setSelectedFile(file)
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setPreviewUrl(reader.result)
+        }
+        reader.readAsDataURL(file)
+      }
+      img.src = URL.createObjectURL(file)
+      return
     }
+    setSelectedFile(file)
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result)
+    }
+    reader.readAsDataURL(file)
   }
 
-  const onSubmit = async (data) => {
+  const onProfileSubmit = async (data) => {
+    // Check if there are any changes
+    const hasChanges = isDirty || selectedFile
+    if (!hasChanges) {
+      toast.info('No changes to update')
+      return
+    }
+
     setIsLoading(true)
     try {
       const formData = {
@@ -46,12 +118,87 @@ const Profile = () => {
         profilePic: selectedFile
       }
       
-      await updateProfile(formData)
-      toast.success('Profile updated successfully!')
+      const result = await updateProfile(formData)
+      if (result.success) {
+        toast.success('Profile updated successfully!')
+        setIsEditing(false)
+        // Update the preview URL if a new image was uploaded
+        if (selectedFile) {
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            setPreviewUrl(reader.result)
+          }
+          reader.readAsDataURL(selectedFile)
+          setSelectedFile(null)
+        }
+      } else {
+        toast.error(result.error || 'Profile update failed')
+      }
     } catch (error) {
-      toast.error(error.message)
+      console.error('Profile update error:', error)
+      toast.error(error.message || 'Profile update failed')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const onPasswordSubmit = async (data) => {
+    setIsLoading(true)
+    try {
+      const result = await changePassword(data.currentPassword, data.newPassword)
+      if (result.success) {
+        toast.success('Password changed successfully!')
+        setShowChangePassword(false)
+        resetPassword()
+        // Clear password fields
+        setShowCurrentPassword(false)
+        setShowNewPassword(false)
+        setShowConfirmPassword(false)
+      } else {
+        // Show specific error message for incorrect current password
+        if (result.error && result.error.includes('incorrect')) {
+          toast.error('Current password is incorrect. Please try again.')
+        } else {
+          toast.error(result.error || 'Password change failed')
+        }
+      }
+    } catch (error) {
+      console.error('Password change error:', error)
+      toast.error(error.message || 'Password change failed')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setIsEditing(false)
+    resetProfile({
+      name: user?.name || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      building: user?.building || '',
+      flat: user?.flat || '',
+      gender: user?.gender || 'male'
+    })
+    setSelectedFile(null)
+    setPreviewUrl(getProfilePicUrl(user?.profilePic))
+    toast.info('Changes cancelled')
+  }
+
+  const handleJudgeRequest = async (reason) => {
+    try {
+      const result = await requestJudgeRole(reason)
+      if (result.success) {
+        toast.success('Your request to become a judge has been sent to the admin.')
+        setShowJudgeRequest(false)
+        // Refresh user data to update status
+        window.location.reload()
+      } else {
+        toast.error(result.error || 'Failed to submit judge request')
+      }
+    } catch (error) {
+      console.error('Judge request error:', error)
+      toast.error('Failed to submit judge request')
     }
   }
 
@@ -71,34 +218,38 @@ const Profile = () => {
   const judgeStatus = getJudgeRequestStatus()
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-background text-foreground py-8 theme-transition">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-card rounded-2xl shadow-xl overflow-hidden border border-border">
           {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-8">
+          <div className="bg-gradient-to-r from-primary to-primary/80 px-6 py-8">
             <div className="flex items-center space-x-6">
               <div className="relative">
                 <img
-                  src={previewUrl || '/default-avatar.png'}
+                  src={previewUrl || '/default-avatar.svg'}
                   alt="Profile"
-                  className="h-24 w-24 rounded-full border-4 border-white shadow-lg object-cover"
+                  className="h-24 w-24 rounded-full border-4 border-white shadow-lg object-cover aspect-square"
+                  onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.svg'; }}
                 />
-                <label className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
+                {isEditing && (
+                  <label className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      aria-label="Upload profile image"
+                    />
+                  </label>
+                )}
               </div>
-              <div>
+              <div className="flex-1">
                 <h1 className="text-3xl font-bold text-white">{user?.name}</h1>
-                <p className="text-indigo-100">{user?.email}</p>
+                <p className="text-primary-foreground/80">{user?.email}</p>
                 <div className="flex items-center space-x-4 mt-2">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white">
                     {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}
@@ -110,6 +261,15 @@ const Profile = () => {
                   )}
                 </div>
               </div>
+              {!isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Edit3 className="h-4 w-4" />
+                  <span>Edit Details</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -118,54 +278,56 @@ const Profile = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Profile Form */}
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                <h2 className="text-2xl font-bold text-foreground mb-6">
                   Profile Information
                 </h2>
                 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Full Name
                       </label>
                       <input
                         type="text"
-                        {...register('name', { required: 'Name is required' })}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                          errors.name
-                            ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
-                            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                        }`}
+                        {...registerProfile('name', { required: 'Name is required' })}
+                        disabled={!isEditing}
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                          profileErrors.name
+                            ? 'border-destructive bg-destructive/10'
+                            : 'border-border bg-background'
+                        } ${!isEditing ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
-                      {errors.name && (
-                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                          {errors.name.message}
+                      {profileErrors.name && (
+                        <p className="mt-1 text-sm text-destructive">
+                          {profileErrors.name.message}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Email
                       </label>
                       <input
                         type="email"
-                        {...register('email', { 
+                        {...registerProfile('email', { 
                           required: 'Email is required',
                           pattern: {
                             value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                             message: 'Invalid email address'
                           }
                         })}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                          errors.email
-                            ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
-                            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                        }`}
+                        disabled={!isEditing}
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                          profileErrors.email
+                            ? 'border-destructive bg-destructive/10'
+                            : 'border-border bg-background'
+                        } ${!isEditing ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
-                      {errors.email && (
-                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                          {errors.email.message}
+                      {profileErrors.email && (
+                        <p className="mt-1 text-sm text-destructive">
+                          {profileErrors.email.message}
                         </p>
                       )}
                     </div>
@@ -173,38 +335,42 @@ const Profile = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Phone Number
                       </label>
                       <input
                         type="tel"
-                        {...register('phone', { 
+                        {...registerProfile('phone', { 
                           required: 'Phone number is required',
                           pattern: {
                             value: /^[0-9]{10}$/,
                             message: 'Please enter a valid 10-digit phone number'
                           }
                         })}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                          errors.phone
-                            ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
-                            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                        }`}
+                        disabled={!isEditing}
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                          profileErrors.phone
+                            ? 'border-destructive bg-destructive/10'
+                            : 'border-border bg-background'
+                        } ${!isEditing ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
-                      {errors.phone && (
-                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                          {errors.phone.message}
+                      {profileErrors.phone && (
+                        <p className="mt-1 text-sm text-destructive">
+                          {profileErrors.phone.message}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Gender
                       </label>
                       <select
-                        {...register('gender', { required: 'Gender is required' })}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 transition-colors"
+                        {...registerProfile('gender', { required: 'Gender is required' })}
+                        disabled={!isEditing}
+                        className={`w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background transition-colors ${
+                          !isEditing ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                       >
                         <option value="male">Male</option>
                         <option value="female">Female</option>
@@ -215,70 +381,237 @@ const Profile = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Building
                       </label>
                       <input
                         type="text"
-                        {...register('building', { required: 'Building is required' })}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                          errors.building
-                            ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
-                            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                        }`}
+                        {...registerProfile('building', { required: 'Building is required' })}
+                        disabled={!isEditing}
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                          profileErrors.building
+                            ? 'border-destructive bg-destructive/10'
+                            : 'border-border bg-background'
+                        } ${!isEditing ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
-                      {errors.building && (
-                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                          {errors.building.message}
+                      {profileErrors.building && (
+                        <p className="mt-1 text-sm text-destructive">
+                          {profileErrors.building.message}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Flat Number
                       </label>
                       <input
                         type="text"
-                        {...register('flat', { required: 'Flat number is required' })}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                          errors.flat
-                            ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
-                            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                        }`}
+                        {...registerProfile('flat', { required: 'Flat number is required' })}
+                        disabled={!isEditing}
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                          profileErrors.flat
+                            ? 'border-destructive bg-destructive/10'
+                            : 'border-border bg-background'
+                        } ${!isEditing ? 'opacity-50 cursor-not-allowed' : ''}`}
                       />
-                      {errors.flat && (
-                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                          {errors.flat.message}
+                      {profileErrors.flat && (
+                        <p className="mt-1 text-sm text-destructive">
+                          {profileErrors.flat.message}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Updating...
-                      </div>
-                    ) : (
-                      'Update Profile'
+                  {/* Action Buttons */}
+                  {isEditing && (
+                    <div className="flex space-x-4">
+                      <button
+                        type="submit"
+                        disabled={isLoading || (!isDirty && !selectedFile)}
+                        className="flex-1 flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {isLoading ? (
+                          <div className="flex items-center">
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Updating...
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <Save className="h-4 w-4 mr-2" />
+                            Update
+                          </div>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        className="flex-1 flex justify-center items-center py-3 px-4 border border-border rounded-lg shadow-sm text-sm font-medium text-foreground bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Change Password Section */}
+                  <div className="border-t border-border pt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-foreground">Change Password</h3>
+                      <button
+                        type="button"
+                        onClick={() => setShowChangePassword(!showChangePassword)}
+                        className="flex items-center space-x-2 text-primary hover:text-primary/80 transition-colors"
+                      >
+                        <Lock className="h-4 w-4" />
+                        <span>{showChangePassword ? 'Hide' : 'Change Password'}</span>
+                      </button>
+                    </div>
+
+                    {showChangePassword && (
+                      <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-4 bg-accent/50 p-4 rounded-lg">
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            Current Password
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showCurrentPassword ? 'text' : 'password'}
+                              {...registerPassword('currentPassword', { required: 'Current password is required' })}
+                              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                                passwordErrors.currentPassword
+                                  ? 'border-destructive bg-destructive/10'
+                                  : 'border-border bg-background'
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            >
+                              {showCurrentPassword ? (
+                                <EyeOff className="h-5 w-5 text-muted-foreground" />
+                              ) : (
+                                <Eye className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </button>
+                          </div>
+                          {passwordErrors.currentPassword && (
+                            <p className="mt-1 text-sm text-destructive">
+                              {passwordErrors.currentPassword.message}
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            New Password
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showNewPassword ? 'text' : 'password'}
+                              {...registerPassword('newPassword', { 
+                                required: 'New password is required',
+                                minLength: {
+                                  value: 6,
+                                  message: 'Password must be at least 6 characters'
+                                }
+                              })}
+                              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                                passwordErrors.newPassword
+                                  ? 'border-destructive bg-destructive/10'
+                                  : 'border-border bg-background'
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                            >
+                              {showNewPassword ? (
+                                <EyeOff className="h-5 w-5 text-muted-foreground" />
+                              ) : (
+                                <Eye className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </button>
+                          </div>
+                          {passwordErrors.newPassword && (
+                            <p className="mt-1 text-sm text-destructive">
+                              {passwordErrors.newPassword.message}
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            Re-enter New Password
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              {...registerPassword('confirmPassword', { 
+                                required: 'Please confirm your password',
+                                validate: (val) => {
+                                  if (watchPassword('newPassword') != val) {
+                                    return "Passwords do not match";
+                                  }
+                                }
+                              })}
+                              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                                passwordErrors.confirmPassword
+                                  ? 'border-destructive bg-destructive/10'
+                                  : 'border-border bg-background'
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                              {showConfirmPassword ? (
+                                <EyeOff className="h-5 w-5 text-muted-foreground" />
+                              ) : (
+                                <Eye className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </button>
+                          </div>
+                          {passwordErrors.confirmPassword && (
+                            <p className="mt-1 text-sm text-destructive">
+                              {passwordErrors.confirmPassword.message}
+                            </p>
+                          )}
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={isLoading}
+                          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {isLoading ? (
+                            <div className="flex items-center">
+                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Changing Password...
+                            </div>
+                          ) : (
+                            'Change Password'
+                          )}
+                        </button>
+                      </form>
                     )}
-                  </button>
+                  </div>
                 </form>
               </div>
 
               {/* Stats and Actions */}
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                  <h2 className="text-2xl font-bold text-foreground mb-6">
                     Statistics
                   </h2>
                   <div className="grid grid-cols-2 gap-4">
@@ -342,20 +675,21 @@ const Profile = () => {
 
                 {/* Judge Request Section */}
                 {user?.role === 'member' && (
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  <div className="bg-accent/50 rounded-lg p-6 border border-border">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">
                       Become a Judge
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    <p className="text-muted-foreground mb-4">
                       Judges have the authority to preside over cases and make final decisions. Request to become a judge if you have the necessary qualifications.
                     </p>
                     
                     {user?.judgeRequestStatus === 'none' && (
                       <button
                         onClick={() => setShowJudgeRequest(true)}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                        className="w-full flex items-center justify-center space-x-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2 px-4 rounded-lg transition-colors"
                       >
-                        Request Judge Role
+                        <Gavel className="h-4 w-4" />
+                        <span>Request Judge Role</span>
                       </button>
                     )}
                     
@@ -376,7 +710,7 @@ const Profile = () => {
                         <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200">
                           Request Rejected
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        <p className="text-sm text-muted-foreground mt-2">
                           You can submit a new request after 30 days.
                         </p>
                       </div>
@@ -392,10 +726,7 @@ const Profile = () => {
       {showJudgeRequest && (
         <JudgeRequest
           onClose={() => setShowJudgeRequest(false)}
-          onSuccess={() => {
-            // Refresh user data
-            window.location.reload()
-          }}
+          onSuccess={handleJudgeRequest}
         />
       )}
     </div>

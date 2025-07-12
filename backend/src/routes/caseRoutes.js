@@ -7,10 +7,7 @@ import {
     updateCaseVerdict,
     updateCaseStatus,
     commentOnCase,
-    suggestVerdict,
-    verifyCase,
-    submitTargetResponse,
-    getPendingVerifications
+    suggestVerdict
 } from '../controllers/caseController.js';
 
 import { protect } from '../middlewares/authMiddleware.js';
@@ -22,7 +19,7 @@ import { createCaseSchema } from '../validators/caseValidators.js';
 
 const router = express.Router();
 
-// ✅ Create case with flexible filing and evidence upload
+// ✅ Create case with evidence upload
 router.post('/', 
     protect, 
     caseCreationLimiter, 
@@ -34,13 +31,6 @@ router.post('/',
 // ✅ View cases (public)
 router.get('/', getAllCases);
 router.get('/:id', getCaseById);
-
-// ✅ Verification routes (judge/admin only)
-router.get('/verifications/pending', protect, authorizeRoles('judge', 'admin'), getPendingVerifications);
-router.post('/:caseId/verify', protect, authorizeRoles('judge', 'admin'), verifyCase);
-
-// ✅ Target response route
-router.post('/:caseId/respond', protect, submitTargetResponse);
 
 // ✅ Update verdict or status (judge/admin only)
 router.put('/:id/verdict', protect, authorizeRoles('judge', 'admin'), updateCaseVerdict);

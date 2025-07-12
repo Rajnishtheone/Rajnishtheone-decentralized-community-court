@@ -4,8 +4,10 @@ import {
   getCurrentUserProfile,
   updateUserRole,
   updateUserProfile,
+  changePassword,
   getUserDashboard,
   forgotPassword,
+  resetPassword,
   contactUs,
   requestJudgeRole,
   getPendingJudgeRequests,
@@ -14,45 +16,48 @@ import {
 
 import { protect } from '../middlewares/authMiddleware.js';
 import { authorizeRoles } from '../middlewares/roleMiddleware.js';
-import { upload } from '../middlewares/uploadMiddleware.js';
+import upload from '../middlewares/uploadMiddleware.js';
 import { downloadCaseAsPDF } from '../controllers/caseController.js';
 
 const router = express.Router();
 
-// ✅ Register - handled by auth routes
-
-// ✅ Login - handled by auth routes
-
 // ✅ Forgot Password
 router.post('/forgot-password', forgotPassword);
 
-// ✅ Contact Us
-router.post('/contact', contactUs);
+// ✅ Reset Password
+router.post('/reset-password', resetPassword);
 
 // ✅ Profile update (with picture)
-router.put('/update/me', protect, upload.single('profilePicture'), updateUserProfile);
+router.put('/update/me', protect, upload.single('profilePic'), updateUserProfile);
 
-// ✅ Dashboard
-router.get('/dashboard/me', protect, getUserDashboard);
-
-// ✅ Download case as PDF
-router.get('/:id/download', protect, downloadCaseAsPDF);
+// ✅ Change Password
+router.put('/change-password', protect, changePassword);
 
 // ✅ Get current user profile
 router.get('/profile/me', protect, getCurrentUserProfile);
 
 // ✅ Get user profile by ID
-router.get('/:id', protect, getUserProfile);
+router.get('/profile/:id', protect, getUserProfile);
+
+// ✅ Get user dashboard stats
+router.get('/dashboard', protect, getUserDashboard);
 
 // ✅ Update role (admin only)
 router.put('/:id/role', protect, authorizeRoles('admin'), updateUserRole);
-import cloudinaryUpload from '../middlewares/cloudinaryUpload.js';
 
-router.put('/update/me', protect, cloudinaryUpload.single('profilePicture'), updateUserProfile);
-
-// Judge request routes
+// ✅ Request judge role
 router.post('/request-judge', protect, requestJudgeRole);
-router.get('/pending-judge-requests', protect, authorizeRoles('admin'), getPendingJudgeRequests);
-router.post('/review-judge-request', protect, authorizeRoles('admin'), reviewJudgeRequest);
+
+// ✅ Get pending judge requests (admin only)
+router.get('/judge-requests/pending', protect, authorizeRoles('admin'), getPendingJudgeRequests);
+
+// ✅ Review judge request (admin only)
+router.put('/judge-requests/:userId/review', protect, authorizeRoles('admin'), reviewJudgeRequest);
+
+// ✅ Contact us
+router.post('/contact', contactUs);
+
+// ✅ Download case as PDF
+router.get('/cases/:id/pdf', protect, downloadCaseAsPDF);
 
 export default router;

@@ -1,18 +1,26 @@
 // backend/src/routes/authRoutes.js
 
 import express from 'express';
-import { registerUser, loginUser, forgotPassword, resetPassword } from '../controllers/authController.js';
-import { upload } from '../middlewares/uploadMiddleware.js';
+import {
+  registerUser,
+  loginUser,
+  googleLogin,
+  completeGoogleProfile,
+  forgotPassword,
+  resetPassword
+} from '../controllers/authController.js';
+
+import { protect } from '../middlewares/authMiddleware.js';
+import upload from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
 
+// ✅ Register (with profile picture)
 router.post('/register', upload.single('profilePic'), registerUser);
 router.post('/login', loginUser);
-
-// Forgot Password
-router.post('/forgot-password', forgotPassword)
-
-// Reset Password
-router.post('/reset-password', resetPassword)
+router.post('/google', googleLogin);
+router.post('/google/complete-profile', completeGoogleProfile);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 export default router;

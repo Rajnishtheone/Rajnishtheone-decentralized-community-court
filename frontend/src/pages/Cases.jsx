@@ -22,7 +22,7 @@ const Cases = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center" aria-label="Cases header">
         <h1 className="text-2xl font-bold text-gray-900">Cases</h1>
         <Link
           to="/create-case"
@@ -32,7 +32,7 @@ const Cases = () => {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" aria-label="Cases list">
         {cases?.cases?.map((caseItem) => (
           <div key={caseItem._id} className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
@@ -45,8 +45,8 @@ const Cases = () => {
                 {caseItem.status}
               </span>
             </div>
-            
-            <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+            {/* Fallback for line-clamp if plugin is not available */}
+            <p className="text-gray-600 text-sm mb-4 line-clamp-3" style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {caseItem.description}
             </p>
 

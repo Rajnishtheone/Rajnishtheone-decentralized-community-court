@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -55,6 +57,38 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .font-inter {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  /* Ensure proper contrast for all text elements */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+  }
+
+  p, span, div {
+    @apply text-foreground;
+  }
+
+  /* Form elements with proper contrast */
+  input, textarea, select {
+    @apply bg-background text-foreground border-border;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  /* Button styles with proper contrast */
+  button {
+    @apply text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  /* Card styles with proper contrast */
+  .card {
+    @apply bg-card text-card-foreground border-border;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   }
 }
 
@@ -64,19 +98,19 @@
   }
   
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4;
   }
   
   .btn-secondary {
-    @apply btn bg-secondary-100 text-secondary-900 hover:bg-secondary-200;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 py-2 px-4;
   }
   
   .btn-outline {
-    @apply btn border border-input hover:bg-accent hover:text-accent-foreground;
+    @apply border border-input hover:bg-accent hover:text-accent-foreground h-10 py-2 px-4;
   }
   
   .btn-ghost {
-    @apply btn hover:bg-accent hover:text-accent-foreground;
+    @apply hover:bg-accent hover:text-accent-foreground h-10 py-2 px-4;
   }
   
   .btn-sm {
@@ -84,7 +118,7 @@
   }
   
   .btn-md {
-    @apply h-10 py-2 px-4;
+    @apply h-10 px-4 py-2;
   }
   
   .btn-lg {
@@ -133,4 +167,57 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Theme transition utilities */
+  .theme-transition {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
+  /* Ensure proper contrast for specific elements */
+  .text-contrast {
+    @apply text-foreground;
+  }
+
+  .bg-contrast {
+    @apply bg-background;
+  }
+
+  .border-contrast {
+    @apply border-border;
+  }
+}
+
+/* Global theme styles */
+html {
+  transition: background-color 0.3s ease;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html:not(.dark) {
+  color-scheme: light;
+}
+
+/* Ensure all elements have proper contrast */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Specific component overrides for better contrast */
+.navbar {
+  @apply bg-background border-border;
+}
+
+.sidebar {
+  @apply bg-card text-card-foreground border-border;
+}
+
+.modal {
+  @apply bg-card text-card-foreground border-border;
+}
+
+.dropdown {
+  @apply bg-card text-card-foreground border-border;
 }

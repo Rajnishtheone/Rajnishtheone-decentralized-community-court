@@ -1,9 +1,9 @@
 // src/context/AuthContext.jsx
 
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import api from '../lib/api'
+import axiosInstance from '../lib/axiosInstance.js'
 
 const AuthContext = createContext();
 
@@ -17,29 +17,24 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null); // will store name/email/id
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [googleData, setGoogleData] = useState(null);
   const navigate = useNavigate()
 
-  // Check if user is logged in on app start
+  // Check authentication status on mount
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      checkAuthStatus()
-    } else {
-      setLoading(false)
-    }
-  }, [])
+    checkAuthStatus();
+  }, []);
 
   const checkAuthStatus = async () => {
     try {
-      const response = await api.get('/users/profile')
-      setUser(response.data.user)
-      setIsAuthenticated(true)
+      const token = localStorage.getItem('token')
+      if (token) {
+        const response = await axiosInstance.get('/users/profile/me');
+        setUser(response.data);
+      }
     } catch (error) {
       localStorage.removeItem('token')
-      delete api.defaults.headers.common['Authorization']
     } finally {
       setLoading(false)
     }
@@ -60,47 +55,100 @@ export const AuthProvider = ({ children }) => {
         }
       })
 
-      const response = await api.post('/auth/register', formData, {
+      const response = await axiosInstance.post('/auth/register', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       })
 
-      return response.data
+      const { token, user: userData } = response.data
+      localStorage.setItem('token', token)
+      setUser(userData)
+      return { success: true }
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Registration failed')
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Registration failed' 
+      }
     }
   }
 
-  const login = async (email, password, role = 'member') => {
+  const login = async (email, password) => {
     try {
-      const response = await api.post('/auth/login', {
-        email,
-        password,
-        role
-      })
+      const response = await axiosInstance.post('/auth/login', { email, password })
+      const { token, user: userData } = response.data
+      localStorage.setItem('token', token)
+      setUser(userData)
+      return { success: true }
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Login failed' 
+      }
+    }
+  }
 
-      const { token, user } = response.data
+  const googleLogin = async (credentialResponse) => {
+    try {
+      const response = await axiosInstance.post('/auth/google', { credential: credentialResponse.credential })
+      const { token, user: userData, requiresProfileCompletion } = response.data
+      
+      if (requiresProfileCompletion) {
+        setGoogleData(userData)
+        return { success: true, requiresProfileCompletion: true }
+      }
       
       localStorage.setItem('token', token)
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      
-      setUser(user)
-      setIsAuthenticated(true)
-      
-      return response.data
+      setUser(userData)
+      return { success: true }
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Login failed')
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Google login failed' 
+      }
+    }
+  }
+
+  const completeGoogleProfile = async (userData) => {
+    try {
+      const formData = new FormData()
+      
+      Object.keys(userData).forEach(key => {
+        if (userData[key] !== null && userData[key] !== undefined) {
+          if (key === 'profilePic' && userData[key] instanceof File) {
+            formData.append('profilePic', userData[key])
+          } else {
+            formData.append(key, userData[key])
+          }
+        }
+      })
+
+      const response = await axiosInstance.post('/auth/complete-profile', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      const { token, user: userData } = response.data
+      localStorage.setItem('token', token)
+      setUser(userData)
+      setGoogleData(null)
+      navigate('/dashboard')
+      return { success: true }
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Profile completion failed' 
+      }
     }
   }
 
   const logout = () => {
     localStorage.removeItem('token')
-    delete api.defaults.headers.common['Authorization']
     setUser(null)
-    setIsAuthenticated(false)
-    toast.success('Logged out successfully')
+    setGoogleData(null)
     navigate('/')
+    toast.success('Logged out successfully')
   }
 
   const updateProfile = async (userData) => {
@@ -117,69 +165,89 @@ export const AuthProvider = ({ children }) => {
         }
       })
 
-      const response = await api.put('/users/profile', formData, {
-        headers: {
+      const response = await axiosInstance.put('/users/update/me', formData, {
+        headers: { 
           'Content-Type': 'multipart/form-data',
         },
       })
 
       setUser(response.data.user)
-      return response.data
+      return { success: true }
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Profile update failed')
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Profile update failed' 
+      }
+    }
+  }
+
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      await axiosInstance.put('/users/change-password', { currentPassword, newPassword })
+      return { success: true }
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Password change failed' 
+      }
     }
   }
 
   const requestJudgeRole = async (reason) => {
     try {
-      const response = await api.post('/users/request-judge', { reason })
-      setUser(response.data.user)
-      return response.data
+      await axiosInstance.post('/users/request-judge', { reason })
+      return { success: true }
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Judge request failed')
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Judge request failed' 
+      }
     }
   }
 
   const forgotPassword = async (email) => {
     try {
-      const response = await api.post('/auth/forgot-password', { email })
-      return response.data
+      await axiosInstance.post('/users/forgot-password', { email })
+      return { success: true }
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Password reset failed')
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Password reset failed' 
+      }
     }
   }
 
   const resetPassword = async (token, newPassword) => {
     try {
-      const response = await api.post('/auth/reset-password', {
-        token,
-        newPassword
-      })
-      return response.data
+      await axiosInstance.post('/users/reset-password', { token, newPassword })
+      return { success: true }
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Password reset failed')
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Password reset failed' 
+      }
     }
   }
 
   const value = {
     user,
-    isAuthenticated,
     loading,
+    googleData,
     register,
     login,
+    googleLogin,
+    completeGoogleProfile,
     logout,
     updateProfile,
+    changePassword,
     requestJudgeRole,
     forgotPassword,
-    resetPassword,
-    isAdmin: user?.role === 'admin',
-    isJudge: user?.role === 'judge',
-    isMember: user?.role === 'member',
+    resetPassword
   }
 
   return (
     <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
-  );
-};
+  )
+}

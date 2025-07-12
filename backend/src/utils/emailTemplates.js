@@ -47,10 +47,11 @@ export const generateEmailTemplate = ({ title, body }) => {
   `;
 };
 
-export const caseStatusTemplate = (username, caseTitle) => `
+export const caseStatusTemplate = (username, caseTitle, status, verdict = null) => `
   <h2>Dear ${username},</h2>
-  <p>Your case titled <strong>"${caseTitle}"</strong> has been <b>published for voting</b>.</p>
-  <p>Citizens can now vote on this case. You will be notified once a verdict is reached.</p>
+  <p>Your case titled <strong>"${caseTitle}"</strong> status has been updated to <b>${status}</b>.</p>
+  ${verdict ? `<p><strong>Verdict:</strong> ${verdict}</p>` : ''}
+  <p>You will be notified of any further updates.</p>
   <br/>
   <p>Regards,</p>
   <p><strong>DCC Team</strong></p>
@@ -91,73 +92,7 @@ export const caseSubmissionTemplate = (username, caseTitle) => `
   </div>
 `;
 
-// ✅ NEW: Target Notification Template
-export const targetNotificationTemplate = (username, caseTitle, caseDescription) => `
-  <div style="font-family: Arial, sans-serif; background-color: #f6f6f6; padding: 20px;">
-    <div style="background-color: #fff; border-radius: 10px; padding: 20px; max-width: 600px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-      <h2 style="color: #e74c3c;">⚖️ Case Filed Against You</h2>
-      <p style="color: #34495e;">Dear ${username},</p>
-      <p style="color: #34495e;">A case has been filed against you in the Decentralized Community Court.</p>
-      
-      <div style="background-color: #f8f9fa; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0;">
-        <h3 style="color: #2c3e50; margin-top: 0;">Case Details:</h3>
-        <p style="color: #34495e; margin-bottom: 10px;"><strong>Title:</strong> ${caseTitle}</p>
-        <p style="color: #34495e; margin-bottom: 0;"><strong>Description:</strong> ${caseDescription}</p>
-      </div>
-      
-      <p style="color: #34495e;">You are required to respond to this case within 7 days. Please log in to your DCC account to:</p>
-      <ul style="color: #34495e;">
-        <li>View the complete case details</li>
-        <li>Submit your response</li>
-        <li>Provide any relevant evidence</li>
-      </ul>
-      
-      <p style="color: #34495e;"><strong>Important:</strong> Failure to respond may result in a default judgment.</p>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.FRONTEND_URL}/cases" style="display:inline-block; padding:12px 24px; background:#e74c3c; color:#fff; text-decoration:none; border-radius:5px; font-weight:bold;">View Case & Respond</a>
-      </div>
-      
-      <p style="color: #7f8c8d; font-size: 0.9em;">If you believe this case was filed in error, please contact our support team immediately.</p>
-      
-      <br/>
-      <p style="font-size: 0.9em; color: #888;">Regards,<br/>DCC Team 👨‍⚖️</p>
-    </div>
-  </div>
-`;
 
-// ✅ NEW: Verification Request Template
-export const verificationRequestTemplate = (username, caseTitle, caseId) => `
-  <div style="font-family: Arial, sans-serif; background-color: #f6f6f6; padding: 20px;">
-    <div style="background-color: #fff; border-radius: 10px; padding: 20px; max-width: 600px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-      <h2 style="color: #f39c12;">🔍 Manual Verification Required</h2>
-      <p style="color: #34495e;">Dear ${username},</p>
-      <p style="color: #34495e;">A case requires manual verification as the automatic verification process was unable to identify the target.</p>
-      
-      <div style="background-color: #f8f9fa; border-left: 4px solid #f39c12; padding: 15px; margin: 20px 0;">
-        <h3 style="color: #2c3e50; margin-top: 0;">Case Information:</h3>
-        <p style="color: #34495e; margin-bottom: 10px;"><strong>Title:</strong> ${caseTitle}</p>
-        <p style="color: #34495e; margin-bottom: 0;"><strong>Case ID:</strong> ${caseId}</p>
-      </div>
-      
-      <p style="color: #34495e;">Please review the case and:</p>
-      <ul style="color: #34495e;">
-        <li>Verify the target's identity using available information</li>
-        <li>Contact community watchmen/caretakers if needed</li>
-        <li>Make a decision to approve or reject the verification</li>
-      </ul>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.FRONTEND_URL}/admin/verifications" style="display:inline-block; padding:12px 24px; background:#f39c12; color:#fff; text-decoration:none; border-radius:5px; font-weight:bold;">Review Case</a>
-      </div>
-      
-      <p style="color: #7f8c8d; font-size: 0.9em;">This verification should be completed within 48 hours.</p>
-      
-      <br/>
-      <p style="font-size: 0.9em; color: #888;">Regards,<br/>DCC Team 👨‍⚖️</p>
-    </div>
-  </div>
-`;
 
 // Password Reset Email Template
 export const passwordResetTemplate = (context) => `
