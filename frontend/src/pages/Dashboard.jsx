@@ -37,7 +37,7 @@ export default function Dashboard() {
   const { data: dashboardData, isLoading } = useQuery(
     'dashboard',
     async () => {
-      const response = await api.get('/users/dashboard/me');
+      const response = await api.get('/users/dashboard');
       return response.data;
     },
     {
@@ -380,19 +380,30 @@ export default function Dashboard() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-sm">Total Members</span>
-                  <span className="font-medium">3,891</span>
+                  <span className="font-medium">
+                    {dashboardData?.community?.totalUsers?.toLocaleString() || 0}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm">Active Cases</span>
-                  <span className="font-medium">47</span>
+                  <span className="font-medium">
+                    {dashboardData?.filedCases?.filter(c => c.status === 'Published for Voting').length || 0}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm">Cases Resolved</span>
-                  <span className="font-medium">1,247</span>
+                  <span className="font-medium">
+                    {dashboardData?.community?.approvedCases?.toLocaleString() || 0}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm">Success Rate</span>
-                  <span className="font-medium text-green-600">98.5%</span>
+                  <span className="font-medium text-green-600">
+                    {dashboardData?.community?.totalCases > 0 
+                      ? `${Math.round((dashboardData.community.approvedCases / dashboardData.community.totalCases) * 100)}%`
+                      : '0%'
+                    }
+                  </span>
                 </div>
               </CardContent>
             </Card>

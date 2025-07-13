@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   },
   name: { 
     type: String, 
-    required: [true, 'Name is required'], 
+    required: false, // Changed from required to false to handle existing users
     trim: true,
     minlength: [2, 'Name must be at least 2 characters'],
     maxlength: [50, 'Name cannot exceed 50 characters']
@@ -48,7 +48,8 @@ const userSchema = new mongoose.Schema({
   },
   age: {
     type: Number,
-    min: [18, 'User must be at least 18 years old']
+    min: [0, 'Age cannot be negative'], // Changed from 18 to 0 to handle existing users
+    default: null // Allow null/undefined for existing users
   },
   gender: {
     type: String,
@@ -143,7 +144,6 @@ userSchema.pre('save', function(next) {
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ 'judgeRequest.status': 1 });
-userSchema.index({ googleId: 1 });
 userSchema.index({ isGoogleUser: 1 });
 
 export default mongoose.model('User', userSchema);

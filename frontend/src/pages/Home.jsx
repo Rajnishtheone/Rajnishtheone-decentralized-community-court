@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from 'react-query';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
+import api from '../lib/api';
 import {
   Scale,
   Users,
@@ -24,6 +26,30 @@ import {
 export default function HomePage() {
   const { user } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Fetch community stats
+  const { data: stats, isLoading: statsLoading } = useQuery(
+    'community-stats',
+    async () => {
+      const response = await api.get('/analytics/community-stats');
+      return response.data;
+    },
+    {
+      refetchInterval: 30000, // Refetch every 30 seconds
+      staleTime: 30000,
+    }
+  );
+
+  // Calculate derived stats
+  const communityStats = {
+    totalUsers: stats?.community?.totalUsers || 0,
+    totalCases: stats?.community?.totalCases || 0,
+    resolvedCases: stats?.community?.approvedCases || 0,
+    successRate: stats?.community?.totalCases > 0 
+      ? Math.round((stats.community.approvedCases / stats.community.totalCases) * 100) 
+      : 0,
+    satisfactionRate: 95, // This could be calculated from user feedback in the future
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-background to-purple-50 dark:from-gray-900 dark:via-background dark:to-gray-900 theme-transition">
@@ -183,15 +209,33 @@ export default function HomePage() {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16">
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">1,247</div>
+              <div className="text-3xl font-bold text-blue-600">
+                {statsLoading ? (
+                  <div className="animate-pulse bg-blue-200 dark:bg-blue-800 h-8 w-16 rounded"></div>
+                ) : (
+                  communityStats.resolvedCases.toLocaleString()
+                )}
+              </div>
               <div className="text-muted-foreground">Cases Resolved</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600">3,891</div>
+              <div className="text-3xl font-bold text-purple-600">
+                {statsLoading ? (
+                  <div className="animate-pulse bg-purple-200 dark:bg-purple-800 h-8 w-16 rounded"></div>
+                ) : (
+                  communityStats.totalUsers.toLocaleString()
+                )}
+              </div>
               <div className="text-muted-foreground">Community Members</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">98.5%</div>
+              <div className="text-3xl font-bold text-green-600">
+                {statsLoading ? (
+                  <div className="animate-pulse bg-green-200 dark:bg-green-800 h-8 w-16 rounded"></div>
+                ) : (
+                  `${communityStats.satisfactionRate}%`
+                )}
+              </div>
               <div className="text-muted-foreground">Satisfaction Rate</div>
             </div>
             <div className="text-center">
@@ -388,15 +432,33 @@ export default function HomePage() {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Active Members</span>
-                  <span className="text-2xl font-bold text-foreground">3,891</span>
+                  <span className="text-2xl font-bold text-foreground">
+                    {statsLoading ? (
+                      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-6 w-16 rounded"></div>
+                    ) : (
+                      communityStats.totalUsers.toLocaleString()
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Cases Resolved</span>
-                  <span className="text-2xl font-bold text-foreground">1,247</span>
+                  <span className="text-2xl font-bold text-foreground">
+                    {statsLoading ? (
+                      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-6 w-16 rounded"></div>
+                    ) : (
+                      communityStats.resolvedCases.toLocaleString()
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Success Rate</span>
-                  <span className="text-2xl font-bold text-foreground">98.5%</span>
+                  <span className="text-2xl font-bold text-foreground">
+                    {statsLoading ? (
+                      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-6 w-16 rounded"></div>
+                    ) : (
+                      `${communityStats.successRate}%`
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Average Resolution Time</span>
