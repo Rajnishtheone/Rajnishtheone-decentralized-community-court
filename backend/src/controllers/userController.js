@@ -283,21 +283,25 @@ const requestJudgeRole = async (req, res) => {
       }
     }
 
-    // Update user with judge request
-    user.judgeRequestStatus = 'pending';
-    user.judgeRequestReason = reason;
-    user.judgeRequestDate = new Date();
-    
-    await user.save();
+    // Update user with judge request using findByIdAndUpdate to avoid validation issues
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        judgeRequestStatus: 'pending',
+        judgeRequestReason: reason,
+        judgeRequestDate: new Date()
+      },
+      { new: true, runValidators: false } // Don't run validators for partial updates
+    );
 
     res.status(200).json({ 
       message: 'Judge request submitted successfully',
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        judgeRequestStatus: user.judgeRequestStatus
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        judgeRequestStatus: updatedUser.judgeRequestStatus
       }
     });
   } catch (error) {
@@ -313,7 +317,7 @@ const getPendingJudgeRequests = async (req, res) => {
   try {
     const requests = await User.find({ 
       judgeRequestStatus: 'pending' 
-    }).select('name email judgeRequestReason judgeRequestedAt');
+    }).select('_id name email judgeRequestReason judgeRequestDate profilePic');
 
     res.status(200).json(requests);
   } catch (error) {
@@ -326,7 +330,8 @@ const getPendingJudgeRequests = async (req, res) => {
 // =======================
 const reviewJudgeRequest = async (req, res) => {
   try {
-    const { userId, action, reason } = req.body; // action: 'approve' or 'reject'
+    const { userId } = req.params;
+    const { action, reason } = req.body; // action: 'approve' or 'reject'
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -363,6 +368,46 @@ const reviewJudgeRequest = async (req, res) => {
   }
 };
 
+// =======================
+// 12. GET ALL USERS (Admin Only)
+// =======================
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+    
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// =======================
+// 13. DELETE USER (Admin Only)
+// =======================
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Prevent admin from deleting themselves
+    if (id === req.user.id) {
+      return res.status(400).json({ message: 'You cannot delete your own account' });
+    }
+    
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    await User.findByIdAndDelete(id);
+    
+    res.status(200).json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export {
   getUserProfile,
   getCurrentUserProfile,
@@ -375,6 +420,8 @@ export {
   contactUs,
   requestJudgeRole,
   reviewJudgeRequest,
-  getPendingJudgeRequests
+  getPendingJudgeRequests,
+  getAllUsers,
+  deleteUser
 }
 

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from 'react-query';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import PrivateRoute from './routes/PrivateRoute.jsx';
+import { useAuth } from './context/AuthContext.jsx';
 
 // Layout Components
 import Layout from './components/Layout.jsx';
@@ -17,6 +18,7 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import CompleteProfile from './pages/CompleteProfile.jsx';
 import Dashboard from './pages/Dashboard.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import Cases from './pages/Cases.jsx';
 import CreateCase from './pages/CreateCase.jsx';
@@ -36,6 +38,12 @@ import './index.css';
 // Create a client
 const queryClient = new QueryClient();
 
+// Conditional Dashboard Component
+const ConditionalDashboard = () => {
+  const { user } = useAuth();
+  return user?.role === 'admin' ? <AdminDashboard /> : <Dashboard />;
+};
+
 // Update document title and metadata
 const updateMetadata = () => {
   document.title = "DCC Court - Decentralized Community Court";
@@ -53,7 +61,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-client-id'}>
         <ThemeProvider>
           <AuthProvider>
             <div className="min-h-screen bg-background text-foreground font-inter theme-transition">
@@ -70,7 +78,12 @@ function App() {
                   {/* Protected Routes */}
                   <Route path="/dashboard" element={
                     <PrivateRoute>
-                      <Dashboard />
+                      <ConditionalDashboard />
+                    </PrivateRoute>
+                  } />
+                  <Route path="/admin" element={
+                    <PrivateRoute requiredRole="admin">
+                      <AdminDashboard />
                     </PrivateRoute>
                   } />
                   <Route path="/profile" element={

@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Eye, EyeOff, Mail, Lock, User, Phone, Building, Calendar, ArrowLeft, Scale, AlertCircle, Upload } from 'lucide-react'
 import TermsModal from '../components/TermsModal'
 import { GoogleLogin } from '@react-oauth/google'
 import toast from 'react-hot-toast'
+import api from '../lib/api'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -17,8 +18,10 @@ const Register = () => {
     building: '',
     flat: '',
     dateOfBirth: '',
-    gender: ''
+    gender: '',
+    role: 'member' // Default role
   })
+  const [isFirstUser, setIsFirstUser] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -29,6 +32,24 @@ const Register = () => {
 
   const { register, googleLogin } = useAuth()
   const navigate = useNavigate()
+
+  // Check if this is the first user
+  useEffect(() => {
+    const checkFirstUser = async () => {
+      try {
+        const response = await api.get('/analytics/community-stats')
+        const totalUsers = response.data?.community?.totalUsers || 0
+        if (totalUsers === 0) {
+          setIsFirstUser(true)
+          setFormData(prev => ({ ...prev, role: 'admin' }))
+        }
+      } catch (error) {
+        console.log('Could not check user count, defaulting to member role')
+      }
+    }
+    
+    checkFirstUser()
+  }, [])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -110,6 +131,10 @@ const Register = () => {
       newErrors.gender = 'Gender is required'
     }
     
+    if (!formData.role) {
+      newErrors.role = 'Role is required'
+    }
+    
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -136,6 +161,7 @@ const Register = () => {
         toast.error(result.error || 'Registration failed')
       }
     } catch (error) {
+      console.error('Registration error:', error)
       toast.error('An error occurred during registration')
     } finally {
       setIsLoading(false)
@@ -238,7 +264,6 @@ const Register = () => {
                   name="name"
                   type="text"
                   autoComplete="name"
-                  required
                   value={formData.name}
                   onChange={handleChange}
                   className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
@@ -566,6 +591,45 @@ const Register = () => {
               </div>
             </div>
 
+            {/* Role Selection */}
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Role
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Scale className="h-5 w-5 text-gray-400" />
+                </div>
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                    errors.role 
+                      ? 'border-red-300 dark:border-red-600' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                >
+                  <option value="member">Community Member</option>
+                  <option value="judge">Judge</option>
+                  {isFirstUser && <option value="admin">Admin (First User)</option>}
+                </select>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {isFirstUser 
+                  ? "You're the first user! You can choose to be an admin with full system access."
+                  : "Choose your role in the community. Members can file cases and vote, Judges can preside over cases. Admin role is only available for the first user or by invitation."
+                }
+              </p>
+              {errors.role && (
+                <div className="flex items-center mt-1 text-sm text-red-600 dark:text-red-400">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.role}
+                </div>
+              )}
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -597,8 +661,8 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Google Registration */}
-          <div className="mt-6">
+          {/* Google Registration - Temporarily Disabled */}
+          {/* <div className="mt-6">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
@@ -608,7 +672,7 @@ const Register = () => {
               shape="rectangular"
               width="100%"
             />
-          </div>
+          </div> */}
 
           {/* Terms and Privacy */}
           <div className="mt-6 text-center">
@@ -630,6 +694,8 @@ const Register = () => {
             </p>
           </div>
         </div>
+
+
 
         {/* Sign In Link */}
         <div className="text-center mt-6">

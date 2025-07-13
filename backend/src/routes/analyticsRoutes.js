@@ -10,11 +10,11 @@ import { authorizeRoles } from '../middlewares/roleMiddleware.js';
 
 const router = express.Router();
 
-// ✅ All analytics routes require authentication
-router.use(protect);
-
-// ✅ Community statistics (public)
+// ✅ Community statistics (public - accessible without auth for first user check)
 router.get('/community-stats', getCommunityStats);
+
+// ✅ All other analytics routes require authentication
+router.use(protect);
 
 // ✅ User activity analytics (admin/judge only)
 router.get('/user-activity', authorizeRoles('admin', 'judge'), getUserActivity);

@@ -61,11 +61,12 @@ export const AuthProvider = ({ children }) => {
         },
       })
 
-      const { token, user: userData } = response.data
+      const { token, user: userDataFromResponse } = response.data
       localStorage.setItem('token', token)
-      setUser(userData)
+      setUser(userDataFromResponse)
       return { success: true }
     } catch (error) {
+      console.error('Registration error in AuthContext:', error)
       return { 
         success: false, 
         error: error.response?.data?.message || 'Registration failed' 
@@ -73,13 +74,13 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const login = async (email, password) => {
+  const login = async (email, password, role) => {
     try {
-      const response = await axiosInstance.post('/auth/login', { email, password })
+      const response = await axiosInstance.post('/auth/login', { email, password, role })
       const { token, user: userData } = response.data
       localStorage.setItem('token', token)
       setUser(userData)
-      return { success: true }
+      return { success: true, user: userData }
     } catch (error) {
       return { 
         success: false, 
@@ -129,9 +130,9 @@ export const AuthProvider = ({ children }) => {
         },
       })
 
-      const { token, user: userData } = response.data
+      const { token, user: userDataFromResponse } = response.data
       localStorage.setItem('token', token)
-      setUser(userData)
+      setUser(userDataFromResponse)
       setGoogleData(null)
       navigate('/dashboard')
       return { success: true }

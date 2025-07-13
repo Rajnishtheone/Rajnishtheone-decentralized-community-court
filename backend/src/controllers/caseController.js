@@ -1,6 +1,7 @@
 // =======================
 // IMPORTS
 // =======================
+import mongoose from 'mongoose';
 import Case from '../models/Case.js';
 import User from '../models/User.js';
 import fs from 'fs';
@@ -133,6 +134,11 @@ export const getAllCases = async (req, res) => {
 // =======================
 export const getCaseById = async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid case ID format' });
+    }
+
     const caseItem = await Case.findById(req.params.id)
       .populate('filedBy', 'username email avatar')
       .populate('comments.commentedBy', 'username avatar role');

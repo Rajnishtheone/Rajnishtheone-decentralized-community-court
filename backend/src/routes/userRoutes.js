@@ -11,7 +11,9 @@ import {
   contactUs,
   requestJudgeRole,
   getPendingJudgeRequests,
-  reviewJudgeRequest
+  reviewJudgeRequest,
+  getAllUsers,
+  deleteUser
 } from '../controllers/userController.js';
 
 import { protect } from '../middlewares/authMiddleware.js';
@@ -42,17 +44,23 @@ router.get('/profile/:id', protect, getUserProfile);
 // ✅ Get user dashboard stats
 router.get('/dashboard', protect, getUserDashboard);
 
-// ✅ Update role (admin only)
-router.put('/:id/role', protect, authorizeRoles('admin'), updateUserRole);
-
-// ✅ Request judge role
-router.post('/request-judge', protect, requestJudgeRole);
+// ✅ Get all users (admin only) - Must come before /:id routes
+router.get('/all', protect, authorizeRoles('admin'), getAllUsers);
 
 // ✅ Get pending judge requests (admin only)
 router.get('/judge-requests/pending', protect, authorizeRoles('admin'), getPendingJudgeRequests);
 
+// ✅ Update role (admin only)
+router.put('/:id/role', protect, authorizeRoles('admin'), updateUserRole);
+
 // ✅ Review judge request (admin only)
 router.put('/judge-requests/:userId/review', protect, authorizeRoles('admin'), reviewJudgeRequest);
+
+// ✅ Delete user (admin only)
+router.delete('/:id', protect, authorizeRoles('admin'), deleteUser);
+
+// ✅ Request judge role
+router.post('/request-judge', protect, requestJudgeRole);
 
 // ✅ Contact us
 router.post('/contact', contactUs);

@@ -9,7 +9,8 @@ import toast from 'react-hot-toast'
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    role: 'member' // Default role for login
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -49,6 +50,10 @@ const Login = () => {
       newErrors.password = 'Password must be at least 6 characters'
     }
     
+    if (!formData.role) {
+      newErrors.role = 'Role is required'
+    }
+    
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -61,10 +66,10 @@ const Login = () => {
     setIsLoading(true)
     
     try {
-      const result = await login(formData.email, formData.password)
+      const result = await login(formData.email, formData.password, formData.role)
       
       if (result.success) {
-        toast.success('Login successful!')
+        toast.success(`Login successful! Welcome ${result.user?.role || 'User'}`)
         navigate('/dashboard')
       } else {
         toast.error(result.error || 'Login failed')
@@ -203,6 +208,43 @@ const Login = () => {
               )}
             </div>
 
+            {/* Role Selection */}
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Login as
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Scale className="h-5 w-5 text-gray-400" />
+                </div>
+                <select
+                  id="role"
+                  name="role"
+                  required
+                  value={formData.role}
+                  onChange={handleChange}
+                  className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                    errors.role 
+                      ? 'border-red-300 dark:border-red-600' 
+                      : 'border-gray-300 dark:border-gray-600'
+                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                >
+                  <option value="member">Community Member</option>
+                  <option value="judge">Judge</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Select the role you registered with
+              </p>
+              {errors.role && (
+                <div className="flex items-center mt-1 text-sm text-red-600 dark:text-red-400">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  {errors.role}
+                </div>
+              )}
+            </div>
+
             {/* Forgot Password Link */}
             <div className="flex items-center justify-between">
               <div className="text-sm">
@@ -246,8 +288,8 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Google Login */}
-          <div className="mt-6">
+          {/* Google Login - Temporarily Disabled */}
+          {/* <div className="mt-6">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
@@ -258,7 +300,7 @@ const Login = () => {
               useOneTap={false}
               context="signin"
             />
-          </div>
+          </div> */}
 
           {/* Terms and Privacy */}
           <div className="mt-6 text-center">

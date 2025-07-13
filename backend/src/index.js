@@ -6,7 +6,8 @@ import cookieParser from 'cookie-parser';
 
 import userRoutes from './routes/userRoutes.js';
 import caseRoutes from './routes/caseRoutes.js';
-import authRoutes from './routes/authRoutes.js'; // ✅ Add this line
+import authRoutes from './routes/authRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
 
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes); // ✅ Mount auth routes
 // =====================
 app.use('/api/users', userRoutes);
 app.use('/api/cases', caseRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // =====================
 // ROOT ROUTE

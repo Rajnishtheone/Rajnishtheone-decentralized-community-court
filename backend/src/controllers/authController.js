@@ -49,9 +49,13 @@ const registerUser = async (req, res) => {
         // Check if this is the first user
         const userCount = await User.countDocuments();
         let assignedRole = role;
+        
         if (userCount === 0) {
             assignedRole = 'admin';
         } else if (!role) {
+            assignedRole = 'member';
+        } else if (role === 'admin' && userCount > 0) {
+            // Only allow admin role for the first user or if explicitly set by existing admin
             assignedRole = 'member';
         }
 
@@ -124,7 +128,7 @@ const registerUser = async (req, res) => {
 // ===========================
 const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, role } = req.body;
 
         // Check if user exists
         const user = await User.findOne({ email });
@@ -136,6 +140,13 @@ const loginUser = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        // Check if user is trying to login with correct role
+        if (role && user.role !== role) {
+            return res.status(400).json({ 
+                message: `Invalid role. Your account is registered as ${user.role}. Please login as ${user.role}.` 
+            });
         }
 
         // Create JWT token
