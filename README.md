@@ -4,38 +4,44 @@ A modern, full-stack web application that enables communities to collaboratively
 
 ## 🚀 Live Demo
 
-[Coming Soon - Deploy in Progress]
+[Coming Soon - Deploy in Progress] working on features...
 
 ## ✨ Key Features
 
 ### 🔐 Authentication & Authorization
+
 - **Multi-role User System**: Admin, Judge, and Public user roles
 - **JWT-based Authentication**: Secure login with access and refresh tokens
 - **Role-based Access Control**: Different permissions for different user types
 - **Password Recovery**: Email-based password reset functionality
 
 ### 📋 Case Management
+
 - **Create & Manage Cases**: Full CRUD operations for legal/ethical cases
 - **Evidence Upload**: Cloudinary integration for media file uploads
 - **Case Categories**: Organized case classification system
 - **Status Tracking**: Real-time case status updates
 
 ### 🗳️ Voting System
+
 - **Real-time Voting**: Socket.IO powered live voting updates
 - **Vote Analytics**: Comprehensive voting statistics and insights
 - **Vote History**: Track voting patterns and user participation
 
 ### 💬 Community Features
+
 - **Comment System**: Public and judge-only commenting
 - **Discussion Threads**: Organized case discussions
 - **User Profiles**: Detailed user information and activity tracking
 
 ### 🤖 AI Integration
+
 - **AI Verdict Suggestions**: OpenAI-powered intelligent case analysis
 - **Smart Recommendations**: AI-assisted decision making
 - **Case Analysis**: Automated case evaluation and insights
 
 ### 📊 Analytics & Reporting
+
 - **Dashboard Analytics**: Real-time statistics and metrics
 - **User Activity Tracking**: Comprehensive user engagement analytics
 - **Case Performance Metrics**: Detailed case analysis and reporting
@@ -43,6 +49,7 @@ A modern, full-stack web application that enables communities to collaboratively
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **React.js 18** - Modern UI framework with hooks
 - **Vite** - Fast build tool and development server
 - **Tailwind CSS** - Utility-first CSS framework
@@ -56,6 +63,7 @@ A modern, full-stack web application that enables communities to collaboratively
 - **React Hot Toast** - Notification system
 
 ### Backend
+
 - **Node.js** - JavaScript runtime
 - **Express.js** - Web application framework
 - **MongoDB** - NoSQL database
@@ -73,6 +81,7 @@ A modern, full-stack web application that enables communities to collaboratively
 - **CORS** - Cross-origin resource sharing
 
 ### Development Tools
+
 - **ESLint** - Code linting
 - **PostCSS** - CSS processing
 - **Autoprefixer** - CSS vendor prefixing
@@ -132,18 +141,21 @@ A modern, full-stack web application that enables communities to collaboratively
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/Rajnishtheone/dcc-court.git
    cd dcc-court
    ```
 
 2. **Install backend dependencies**
+
    ```bash
    cd backend
    npm install
    ```
 
 3. **Install frontend dependencies**
+
    ```bash
    cd ../frontend
    npm install
@@ -152,9 +164,10 @@ A modern, full-stack web application that enables communities to collaboratively
 4. **Environment Setup**
 
    Create `.env` file in the backend directory:
+
    ```env
    # Server Configuration
-   
+
    # Frontend URL (for CORS)
    FRONTEND_URL=http://localhost:5173
    ```
@@ -162,12 +175,14 @@ A modern, full-stack web application that enables communities to collaboratively
 5. **Start the development servers**
 
    **Backend:**
+
    ```bash
    cd backend
    npm run dev
    ```
 
    **Frontend:**
+
    ```bash
    cd frontend
    npm run dev
@@ -180,6 +195,7 @@ A modern, full-stack web application that enables communities to collaboratively
 ## 📚 API Documentation
 
 ### Authentication Endpoints
+
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
@@ -187,11 +203,13 @@ A modern, full-stack web application that enables communities to collaboratively
 - `POST /api/auth/reset-password` - Password reset
 
 ### User Endpoints
+
 - `GET /api/users/profile` - Get user profile
 - `PUT /api/users/profile` - Update user profile
 - `GET /api/users` - Get all users (Admin only)
 
 ### Case Endpoints
+
 - `GET /api/cases` - Get all cases
 - `POST /api/cases` - Create new case
 - `GET /api/cases/:id` - Get case by ID
@@ -199,47 +217,56 @@ A modern, full-stack web application that enables communities to collaboratively
 - `DELETE /api/cases/:id` - Delete case
 
 ### Voting Endpoints
+
 - `POST /api/votes` - Cast vote on case
 - `GET /api/votes/case/:caseId` - Get votes for case
 
 ### Comment Endpoints
+
 - `GET /api/comments/case/:caseId` - Get comments for case
 - `POST /api/comments` - Add comment to case
 
 ### Analytics Endpoints
+
 - `GET /api/analytics/dashboard` - Get dashboard analytics
 - `GET /api/analytics/cases` - Get case analytics
 
 ## 🔧 Configuration
 
 ### Database Setup
+
 1. Install MongoDB locally or use MongoDB Atlas
 2. Create a database named `dcc-court`
 3. Update the `MONGODB_URI` in your `.env` file
 
 ### Email Setup
+
 1. Enable 2-factor authentication on your Gmail account
 2. Generate an app password
 3. Update the email configuration in your `.env` file
 
 ### Cloudinary Setup
+
 1. Create a Cloudinary account
 2. Get your cloud name, API key, and API secret
 3. Update the Cloudinary configuration in your `.env` file
 
 ### OpenAI Setup
+
 1. Get an API key from OpenAI
 2. Update the `OPENAI_API_KEY` in your `.env` file
 
 ## 🧪 Testing
 
 ### Backend Testing
+
 ```bash
 cd backend
 npm test
 ```
 
 ### Frontend Testing
+
 ```bash
 cd frontend
 npm test
@@ -248,11 +275,13 @@ npm test
 ## 🚀 Deployment
 
 ### Backend Deployment
+
 1. Set up a production MongoDB instance
 2. Configure environment variables for production
 3. Deploy to your preferred hosting platform (Heroku, Vercel, AWS, etc.)
 
 ### Frontend Deployment
+
 1. Build the production version:
    ```bash
    cd frontend
@@ -286,6 +315,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 If you have any questions or need support, please:
+
 - Open an issue on GitHub
 - Contact the maintainer at [rajnishkk97@gmail.com]
 
