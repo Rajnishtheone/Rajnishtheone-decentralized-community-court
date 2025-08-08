@@ -18,7 +18,7 @@ import {
 
 import { protect } from '../middlewares/authMiddleware.js';
 import { authorizeRoles } from '../middlewares/roleMiddleware.js';
-import upload from '../middlewares/uploadMiddleware.js';
+import { upload, handleUploadError } from '../middlewares/uploadMiddleware.js';
 import { downloadCaseAsPDF } from '../controllers/caseController.js';
 
 const router = express.Router();
@@ -30,7 +30,7 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 
 // ✅ Profile update (with picture)
-router.put('/update/me', protect, upload.single('profilePic'), updateUserProfile);
+router.put('/update/me', protect, upload.single('profilePic'), handleUploadError, updateUserProfile);
 
 // ✅ Change Password
 router.put('/change-password', protect, changePassword);

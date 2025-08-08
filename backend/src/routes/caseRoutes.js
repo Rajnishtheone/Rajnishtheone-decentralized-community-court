@@ -7,13 +7,17 @@ import {
     updateCaseVerdict,
     updateCaseStatus,
     commentOnCase,
-    suggestVerdict
+    suggestVerdict,
+    getPendingCases,
+    deleteCase,
+    verifyCase,
+    getJudgeDashboard
 } from '../controllers/caseController.js';
 
 import { protect } from '../middlewares/authMiddleware.js';
 import { authorizeRoles } from '../middlewares/roleMiddleware.js';
 import { caseCreationLimiter } from '../middlewares/rateLimitMiddleware.js';
-import cloudinaryUpload from '../middlewares/cloudinaryUpload.js';
+import { upload as cloudinaryUpload, handleUploadError } from '../middlewares/cloudinaryUpload.js';
 import { validateBody } from '../middlewares/validateMiddleware.js';
 import { createCaseSchema } from '../validators/caseValidators.js';
 
@@ -24,6 +28,7 @@ router.post('/',
     protect, 
     caseCreationLimiter, 
     cloudinaryUpload.single('evidence'), 
+    handleUploadError,
     validateBody(createCaseSchema),
     createCase
 );
@@ -32,9 +37,19 @@ router.post('/',
 router.get('/', getAllCases);
 router.get('/:id', getCaseById);
 
+// ✅ Judge/Admin specific routes
+router.get('/verifications/pending', protect, authorizeRoles('judge', 'admin'), getPendingCases);
+router.get('/judge/dashboard', protect, authorizeRoles('judge', 'admin'), getJudgeDashboard);
+
 // ✅ Update verdict or status (judge/admin only)
 router.put('/:id/verdict', protect, authorizeRoles('judge', 'admin'), updateCaseVerdict);
 router.put('/:id/status', protect, authorizeRoles('judge', 'admin'), updateCaseStatus);
+
+// ✅ Delete case (judge/admin only)
+router.delete('/:id', protect, authorizeRoles('judge', 'admin'), deleteCase);
+
+// ✅ Verify case (judge/admin only)
+router.post('/:id/verify', protect, authorizeRoles('judge', 'admin'), verifyCase);
 
 // ✅ Vote on a case
 router.post('/:caseId/vote', protect, castVote);

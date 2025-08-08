@@ -11,12 +11,12 @@ import {
 } from '../controllers/authController.js';
 
 import { protect } from '../middlewares/authMiddleware.js';
-import upload from '../middlewares/uploadMiddleware.js';
+import { upload, handleUploadError } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
 
 // ✅ Register (with profile picture)
-router.post('/register', upload.single('profilePic'), registerUser);
+router.post('/register', upload.single('profilePic'), handleUploadError, registerUser);
 router.post('/login', loginUser);
 router.post('/google', googleLogin);
 router.post('/google/complete-profile', completeGoogleProfile);
