@@ -19,6 +19,7 @@ import Register from './pages/Register.jsx';
 import CompleteProfile from './pages/CompleteProfile.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import JudgeDashboard from './pages/JudgeDashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import Cases from './pages/Cases.jsx';
 import CreateCase from './pages/CreateCase.jsx';
@@ -41,7 +42,9 @@ const queryClient = new QueryClient();
 // Conditional Dashboard Component
 const ConditionalDashboard = () => {
   const { user } = useAuth();
-  return user?.role === 'admin' ? <AdminDashboard /> : <Dashboard />;
+  if (user?.role === 'admin') return <AdminDashboard />;
+  if (user?.role === 'judge') return <JudgeDashboard />;
+  return <Dashboard />;
 };
 
 // Update document title and metadata
