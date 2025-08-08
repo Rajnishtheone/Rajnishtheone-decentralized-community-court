@@ -54,6 +54,18 @@ const caseSchema = new mongoose.Schema({
     isFlagged: { type: Boolean, default: false },
     flagReason: { type: String },
 
+    // Verification fields for judges
+    verifiedTargetId: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User' 
+    },
+    verificationNotes: { type: String },
+    verifiedBy: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User' 
+    },
+    verifiedAt: { type: Date },
+
     comments: [
         {
             text: { 
