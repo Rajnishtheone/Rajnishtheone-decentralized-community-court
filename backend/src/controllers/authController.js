@@ -62,8 +62,8 @@ const registerUser = async (req, res) => {
         // Handle profile picture upload
         let profilePic = '';
         if (req.file) {
-            // Use the filename for storage, not the full path
-            profilePic = req.file.filename;
+            // Store the file path for local storage (consistent with updateUserProfile)
+            profilePic = `/uploads/${req.file.filename}`;
         }
 
         // Create new user with all fields

@@ -147,11 +147,56 @@ const getUserDashboard = async (req, res) => {
     // Calculate reputation (based on activity and accuracy)
     const reputation = Math.round((totalVotes * 10) + (winRate * 2));
 
+    // Get published cases for community voting (excluding user's own cases)
+    const publishedCases = await Case.find({ 
+      status: 'Published for Voting',
+      filedBy: { $ne: userId } // Exclude user's own cases
+    })
+    .populate('filedBy', 'username')
+    .populate('votes.votedBy', 'username')
+    .sort({ createdAt: -1 })
+    .limit(10);
+
+    // Get user's filed cases for the dashboard
+    const userFiledCases = await Case.find({ filedBy: userId })
+      .populate('votes.votedBy', 'username')
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    // Calculate vote statistics for each case
+    const casesWithVoteStats = publishedCases.map(caseItem => {
+      const yesVotes = caseItem.votes.filter(vote => vote.vote === 'yes').length;
+      const noVotes = caseItem.votes.filter(vote => vote.vote === 'no').length;
+      const totalVotes = yesVotes + noVotes;
+      
+      return {
+        ...caseItem.toObject(),
+        yesVotes,
+        noVotes,
+        totalVotes
+      };
+    });
+
+    const userCasesWithVoteStats = userFiledCases.map(caseItem => {
+      const yesVotes = caseItem.votes.filter(vote => vote.vote === 'yes').length;
+      const noVotes = caseItem.votes.filter(vote => vote.vote === 'no').length;
+      const totalVotes = yesVotes + noVotes;
+      
+      return {
+        ...caseItem.toObject(),
+        yesVotes,
+        noVotes,
+        totalVotes
+      };
+    });
+
     res.status(200).json({
       casesFiled,
       totalVotes,
       winRate,
-      reputation
+      reputation,
+      publishedCases: casesWithVoteStats, // Cases available for voting
+      filedCases: userCasesWithVoteStats // User's own cases
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

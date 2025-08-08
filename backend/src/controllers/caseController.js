@@ -314,3 +314,184 @@ export const suggestVerdict = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// =======================
+// 9. GET PENDING CASES FOR JUDGES
+// =======================
+export const getPendingCases = async (req, res) => {
+  try {
+    // Only admin/judge can access pending cases
+    if (!['admin', 'judge'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Only admins and judges can view pending cases' });
+    }
+
+    const { 
+      page = 1, 
+      limit = 10, 
+      status = 'Pending Review',
+      search 
+    } = req.query;
+
+    const query = { status };
+
+    // Search in title and description
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    const cases = await Case.find(query)
+      .populate('filedBy', 'username email avatar building flat')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .exec();
+
+    const total = await Case.countDocuments(query);
+
+    res.status(200).json({
+      cases,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total
+    });
+  } catch (error) {
+    console.error('❌ Error in getPendingCases:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// =======================
+// 10. DELETE CASE (ADMIN/JUDGE)
+// =======================
+export const deleteCase = async (req, res) => {
+  try {
+    const caseItem = await Case.findById(req.params.id);
+
+    if (!caseItem) {
+      return res.status(404).json({ message: 'Case not found' });
+    }
+
+    // Only admin/judge can delete cases
+    if (!['admin', 'judge'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Only admins and judges can delete cases' });
+    }
+
+    // Delete the case
+    await Case.findByIdAndDelete(req.params.id);
+
+    // 📧 Notify filer about case deletion
+    const filer = await User.findById(caseItem.filedBy);
+    if (filer) {
+      await sendEmail({
+        to: filer.email,
+        subject: '🗑️ Case Deleted',
+        html: generateEmailTemplate({
+          title: 'Case Deleted',
+          body: `Your case "${caseItem.title}" has been deleted by a ${req.user.role}.`
+        })
+      });
+    }
+
+    res.status(200).json({ 
+      message: '✅ Case deleted successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error in deleteCase:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// =======================
+// 11. VERIFY CASE (JUDGE/ADMIN)
+// =======================
+export const verifyCase = async (req, res) => {
+  try {
+    const { verifiedTargetId, verificationNotes, action } = req.body;
+    const caseItem = await Case.findById(req.params.id);
+
+    if (!caseItem) {
+      return res.status(404).json({ message: 'Case not found' });
+    }
+
+    // Only admin/judge can verify cases
+    if (!['admin', 'judge'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Only admins and judges can verify cases' });
+    }
+
+    if (action === 'verify') {
+      // Verify the case and assign target
+      caseItem.status = 'Under Review';
+      caseItem.verifiedTargetId = verifiedTargetId;
+      caseItem.verificationNotes = verificationNotes;
+      caseItem.verifiedBy = req.user.id;
+      caseItem.verifiedAt = new Date();
+    } else if (action === 'reject') {
+      // Reject the case
+      caseItem.status = 'Rejected';
+      caseItem.verificationNotes = verificationNotes;
+      caseItem.verifiedBy = req.user.id;
+      caseItem.verifiedAt = new Date();
+    }
+
+    await caseItem.save();
+
+    // 📧 Notify filer about verification
+    const filer = await User.findById(caseItem.filedBy);
+    if (filer) {
+      await sendEmail({
+        to: filer.email,
+        subject: `📋 Case ${action === 'verify' ? 'Verified' : 'Rejected'}`,
+        html: generateEmailTemplate({
+          title: `Case ${action === 'verify' ? 'Verified' : 'Rejected'}`,
+          body: `Your case "${caseItem.title}" has been ${action === 'verify' ? 'verified and is under review' : 'rejected'}.`
+        })
+      });
+    }
+
+    res.status(200).json({ 
+      message: `✅ Case ${action === 'verify' ? 'verified' : 'rejected'} successfully`,
+      case: caseItem
+    });
+  } catch (error) {
+    console.error('❌ Error in verifyCase:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// =======================
+// 12. GET JUDGE DASHBOARD STATS
+// =======================
+export const getJudgeDashboard = async (req, res) => {
+  try {
+    // Only admin/judge can access judge dashboard
+    if (!['admin', 'judge'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Only admins and judges can access judge dashboard' });
+    }
+
+    const pendingCases = await Case.countDocuments({ status: 'Pending Review' });
+    const underReviewCases = await Case.countDocuments({ status: 'Under Review' });
+    const publishedCases = await Case.countDocuments({ status: 'Published for Voting' });
+    const resolvedCases = await Case.countDocuments({ status: 'Verdict Reached' });
+
+    // Get recent cases for review
+    const recentCases = await Case.find({ 
+      status: { $in: ['Pending Review', 'Under Review'] } 
+    })
+    .populate('filedBy', 'username email')
+    .sort({ createdAt: -1 })
+    .limit(5);
+
+    res.status(200).json({
+      stats: {
+        pendingCases,
+        underReviewCases,
+        publishedCases,
+        resolvedCases
+      },
+      recentCases
+    });
+  } catch (error) {
+    console.error('❌ Error in getJudgeDashboard:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
