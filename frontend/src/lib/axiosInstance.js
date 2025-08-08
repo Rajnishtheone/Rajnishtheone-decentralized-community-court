@@ -4,9 +4,9 @@ import axios from "axios";
 
 // Create instance with base URL
 const axiosInstance = axios.create({
-  baseURL:  process.env.REACT_APP_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL, // Vite uses import.meta.env
   withCredentials: true, // Sends httpOnly refresh cookies
-});
+})
 
 // Attach token to headers if available
 axiosInstance.interceptors.request.use(
