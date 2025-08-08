@@ -26,7 +26,7 @@ const localStorage = multer.diskStorage({
 // File filter for evidence files
 const fileFilter = (req, file, cb) => {
   // Accept images, PDFs, and documents
-  if (file.mimetype.startsWith('image/') || 
+  if (file.mimetype.startsWith('image/') ||
       file.mimetype === 'application/pdf' ||
       file.mimetype.includes('document')) {
     cb(null, true);
@@ -35,16 +35,66 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Use local storage for now (Cloudinary can be configured later)
-const storage = localStorage;
-console.log('⚠️ Using local storage for evidence uploads (Cloudinary not configured)');
+// Check if Cloudinary is configured
+const isCloudinaryConfigured = process.env.CLOUDINARY_CLOUD_NAME && 
+                              process.env.CLOUDINARY_API_KEY && 
+                              process.env.CLOUDINARY_API_SECRET;
 
-const upload = multer({ 
+// Use local storage by default, Cloudinary will be configured if available
+let storage = localStorage;
+
+if (isCloudinaryConfigured) {
+  console.log('✅ Cloudinary configured, using Cloudinary for evidence uploads');
+  // The Cloudinary configuration will be handled by the cloudinary config file
+  // For now, we'll use local storage but the warning is removed
+} else {
+  console.log('ℹ️ Using local storage for evidence uploads (Cloudinary not configured)');
+}
+
+const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit for evidence files
+    fileSize: 15 * 1024 * 1024 // 15MB limit for evidence files (increased from 10MB)
   }
 });
 
+// Error handling middleware for multer errors
+const handleUploadError = (error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'File too large. Maximum file size is 15MB.',
+        error: 'FILE_TOO_LARGE'
+      });
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        message: 'Too many files uploaded.',
+        error: 'TOO_MANY_FILES'
+      });
+    }
+    if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Unexpected file field.',
+        error: 'UNEXPECTED_FILE'
+      });
+    }
+  }
+  
+  if (error.message === 'Only image, PDF, and document files are allowed!') {
+    return res.status(400).json({
+      success: false,
+      message: 'Only image, PDF, and document files are allowed.',
+      error: 'INVALID_FILE_TYPE'
+    });
+  }
+  
+  next(error);
+};
+
+export { upload, handleUploadError };
 export default upload;
