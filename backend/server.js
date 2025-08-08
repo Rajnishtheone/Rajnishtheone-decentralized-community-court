@@ -7,8 +7,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
-import mongoSanitize from 'express-mongo-sanitize';
-import xss from 'xss-clean';
+// import mongoSanitize from 'express-mongo-sanitize'; // temporarily disabled
+// import xss from 'xss-clean'; // temporarily disabled
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -30,12 +30,24 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost:5177', 'http://localhost:5178', 'http://localhost:5179', 'http://localhost:3000'], // Allow multiple ports for development
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:5175',
+      'http://localhost:5176',
+      'http://localhost:5177',
+      'http://localhost:5178',
+      'http://localhost:5179',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'https://rajnishtheone-decentralized-communi.vercel.app', // Vercel frontend domain
+      'https://rajnishtheone-decentralized-community-court.vercel.app', // add if needed
+    ],
     credentials: true,
   }
 });
 
-// Attach socket.io to app so controllers can access
+// Attach socket.io instance to app (for controllers)
 app.set('io', io);
 
 // ====================
@@ -46,24 +58,26 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Temporarily disable mongoSanitize due to compatibility issue
+// Temporarily disabled for compatibility issues:
 // app.use(mongoSanitize());
-// Temporarily disable xss-clean due to Express 5 compatibility issue
 // app.use(xss());
 
+// ====================
 // Enhanced CORS configuration
-app.use(cors({ 
+// ====================
+app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175',
     'http://localhost:3000',
     'http://127.0.0.1:5173',
-    'https://rajnishtheone-decentralized-communi.vercel.app' // ✅ Add your Vercel frontend domain here
+    'https://rajnishtheone-decentralized-communi.vercel.app', // Vercel frontend domain
+    'https://rajnishtheone-decentralized-community-court.vercel.app', // optional additional domain
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
 app.use(cookieParser());
@@ -90,8 +104,8 @@ app.use('/uploads', (req, res, next) => {
 // Rate Limiting for Auth APIs
 // ====================
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 100,
   message: { error: '⚠️ Too many requests from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -115,7 +129,7 @@ app.use('/api/analytics', analyticsRoutes);
 // Root Route
 // ====================
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: '✅ DCC Backend API is running...',
     version: '1.0.0',
     timestamp: new Date().toISOString()
@@ -126,7 +140,7 @@ app.get('/', (req, res) => {
 // Health Check Route
 // ====================
 app.get('/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
@@ -159,7 +173,7 @@ mongoose.connect(process.env.MONGO_URI)
   server.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📁 Static files served from: ${path.join(__dirname, 'uploads')}`);
-    console.log(`🌐 CORS enabled for: http://localhost:5173`);
+    console.log(`🌐 CORS enabled for specified domains`);
   });
 })
 .catch((err) => {
