@@ -1,11 +1,10 @@
 import axios from 'axios'
 
-// Use environment variable or fallback to localhost
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ;
-
+// Use environment variable or fallback to Render API
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://rajnishtheone-decentralized-community.onrender.com/api'
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: "https://rajnishtheone-decentralized-community.onrender.com/api",
   headers: {
     'Content-Type': 'application/json',
   },
@@ -20,9 +19,7 @@ api.interceptors.request.use(
     }
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
 // Response interceptor to handle errors
@@ -30,7 +27,6 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'
