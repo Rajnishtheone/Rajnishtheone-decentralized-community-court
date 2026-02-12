@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Eye, EyeOff, Mail, Lock, User, Phone, Building, Calendar, ArrowLeft, Scale, AlertCircle, Upload } from 'lucide-react'
+import { useTheme } from '../context/ThemeContext.jsx'
+import { Eye, EyeOff, Mail, Lock, User, Phone, Building, Calendar, ArrowLeft, Scale, AlertCircle, Upload, CheckCircle } from 'lucide-react'
 import TermsModal from '../components/TermsModal'
 import { GoogleLogin } from '@react-oauth/google'
 import toast from 'react-hot-toast'
@@ -19,7 +20,7 @@ const Register = () => {
     flat: '',
     dateOfBirth: '',
     gender: '',
-    role: 'member' // Default role
+    role: 'member'
   })
   const [isFirstUser, setIsFirstUser] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -31,9 +32,9 @@ const Register = () => {
   const [profilePicPreview, setProfilePicPreview] = useState('')
 
   const { register, googleLogin } = useAuth()
+  const { isDark } = useTheme()
   const navigate = useNavigate()
 
-  // Check if this is the first user
   useEffect(() => {
     const checkFirstUser = async () => {
       try {
@@ -47,7 +48,7 @@ const Register = () => {
         console.log('Could not check user count, defaulting to member role')
       }
     }
-    
+
     checkFirstUser()
   }, [])
 
@@ -57,7 +58,6 @@ const Register = () => {
       ...prev,
       [name]: value
     }))
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -80,80 +80,80 @@ const Register = () => {
 
   const validateForm = () => {
     const newErrors = {}
-    
+
     if (!formData.name) {
       newErrors.name = 'Name is required'
     }
-    
+
     if (!formData.username) {
       newErrors.username = 'Username is required'
     } else if (formData.username.length < 3) {
       newErrors.username = 'Username must be at least 3 characters'
     }
-    
+
     if (!formData.email) {
       newErrors.email = 'Email is required'
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid'
     }
-    
+
     if (!formData.password) {
       newErrors.password = 'Password is required'
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters'
     }
-    
+
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password'
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match'
     }
-    
+
     if (!formData.phone) {
       newErrors.phone = 'Phone number is required'
     } else if (!/^[0-9]{10}$/.test(formData.phone)) {
       newErrors.phone = 'Phone number must be 10 digits'
     }
-    
+
     if (!formData.building) {
       newErrors.building = 'Building is required'
     }
-    
+
     if (!formData.flat) {
       newErrors.flat = 'Flat number is required'
     }
-    
+
     if (!formData.dateOfBirth) {
       newErrors.dateOfBirth = 'Date of birth is required'
     }
-    
+
     if (!formData.gender) {
       newErrors.gender = 'Gender is required'
     }
-    
+
     if (!formData.role) {
       newErrors.role = 'Role is required'
     }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!validateForm()) return
-    
+
     setIsLoading(true)
-    
+
     try {
       const userData = {
         ...formData,
         profilePic: profilePic
       }
-      
+
       const result = await register(userData)
-      
+
       if (result.success) {
         toast.success('Registration successful!')
         navigate('/dashboard')
@@ -171,7 +171,7 @@ const Register = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const result = await googleLogin(credentialResponse)
-      
+
       if (result.success) {
         if (result.requiresProfileCompletion) {
           toast.success('Please complete your profile')
@@ -193,34 +193,55 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center space-x-2 mb-6">
-            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            <span className="text-gray-600 dark:text-gray-400">Back to Home</span>
-          </Link>
-          
-          <div className="flex justify-center mb-6">
-            <div className="p-3 bg-indigo-100 dark:bg-indigo-900 rounded-full">
-              <Scale className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+      <div className="w-full max-w-6xl mx-auto bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="hidden lg:flex flex-col justify-between p-10 bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-600 text-white">
+          <div>
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="p-3 bg-white/10 rounded-full">
+                <Scale className="h-7 w-7" />
+              </div>
+              <span className="text-2xl font-semibold">DCC Court</span>
+            </div>
+            <h2 className="text-3xl font-semibold leading-tight">Create your community account.</h2>
+            <p className="mt-4 text-white/80">
+              Join neighbors, judges, and admins who collaborate to resolve disputes with transparency.
+            </p>
+            <div className="mt-8 space-y-3 text-sm">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                File cases and add evidence securely
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Vote on published cases with AI insights
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Request judge access with admin approval
+              </div>
             </div>
           </div>
-          
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Create Your Account
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Join DCC Court and start participating in community justice
-          </p>
+          <div className="text-xs text-white/70">
+            Already a member? Sign in to continue.
+          </div>
         </div>
 
-        {/* Registration Form */}
-        <div className="bg-white dark:bg-gray-800 py-8 px-6 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Profile Picture */}
+        <div className="p-8 sm:p-10">
+          <div className="flex items-center justify-between mb-6">
+            <Link to="/" className="inline-flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Home</span>
+            </Link>
+          </div>
+
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Create Your Account</h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Join DCC Court and participate in fair community justice
+          </p>
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="form-label">
                 Profile Picture (Optional)
               </label>
               <div className="flex items-center space-x-4">
@@ -250,9 +271,8 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Name */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="name" className="form-label">
                 Name
               </label>
               <div className="relative">
@@ -266,11 +286,7 @@ const Register = () => {
                   autoComplete="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.name 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input pl-10 pr-3 ${errors.name ? 'border-red-300 dark:border-red-600' : ''}`}
                   placeholder="Enter your name"
                 />
               </div>
@@ -282,9 +298,8 @@ const Register = () => {
               )}
             </div>
 
-            {/* Username */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="username" className="form-label">
                 Username
               </label>
               <div className="relative">
@@ -299,11 +314,7 @@ const Register = () => {
                   required
                   value={formData.username}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.username 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input pl-10 pr-3 ${errors.username ? 'border-red-300 dark:border-red-600' : ''}`}
                   placeholder="Enter your username"
                 />
               </div>
@@ -315,9 +326,8 @@ const Register = () => {
               )}
             </div>
 
-            {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="email" className="form-label">
                 Email Address
               </label>
               <div className="relative">
@@ -332,11 +342,7 @@ const Register = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.email 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input pl-10 pr-3 ${errors.email ? 'border-red-300 dark:border-red-600' : ''}`}
                   placeholder="Enter your email"
                 />
               </div>
@@ -348,9 +354,8 @@ const Register = () => {
               )}
             </div>
 
-            {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="password" className="form-label">
                 Password
               </label>
               <div className="relative">
@@ -365,11 +370,7 @@ const Register = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-10 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.password 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input pl-10 pr-10 ${errors.password ? 'border-red-300 dark:border-red-600' : ''}`}
                   placeholder="Enter your password"
                 />
                 <button
@@ -392,9 +393,8 @@ const Register = () => {
               )}
             </div>
 
-            {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="confirmPassword" className="form-label">
                 Confirm Password
               </label>
               <div className="relative">
@@ -409,11 +409,7 @@ const Register = () => {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-10 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.confirmPassword 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input pl-10 pr-10 ${errors.confirmPassword ? 'border-red-300 dark:border-red-600' : ''}`}
                   placeholder="Confirm your password"
                 />
                 <button
@@ -436,9 +432,8 @@ const Register = () => {
               )}
             </div>
 
-            {/* Phone */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="phone" className="form-label">
                 Phone Number
               </label>
               <div className="relative">
@@ -453,11 +448,7 @@ const Register = () => {
                   required
                   value={formData.phone}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.phone 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input pl-10 pr-3 ${errors.phone ? 'border-red-300 dark:border-red-600' : ''}`}
                   placeholder="Enter your phone number"
                 />
               </div>
@@ -469,10 +460,9 @@ const Register = () => {
               )}
             </div>
 
-            {/* Building and Flat */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="building" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="building" className="form-label">
                   Building
                 </label>
                 <div className="relative">
@@ -486,11 +476,7 @@ const Register = () => {
                     required
                     value={formData.building}
                     onChange={handleChange}
-                    className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                      errors.building 
-                        ? 'border-red-300 dark:border-red-600' 
-                        : 'border-gray-300 dark:border-gray-600'
-                    } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                    className={`form-input pl-10 pr-3 ${errors.building ? 'border-red-300 dark:border-red-600' : ''}`}
                     placeholder="Building name/number"
                   />
                 </div>
@@ -503,7 +489,7 @@ const Register = () => {
               </div>
 
               <div>
-                <label htmlFor="flat" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="flat" className="form-label">
                   Flat Number
                 </label>
                 <input
@@ -513,11 +499,7 @@ const Register = () => {
                   required
                   value={formData.flat}
                   onChange={handleChange}
-                  className={`block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.flat 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input ${errors.flat ? 'border-red-300 dark:border-red-600' : ''}`}
                   placeholder="Flat number"
                 />
                 {errors.flat && (
@@ -529,10 +511,9 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Date of Birth and Gender */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="dateOfBirth" className="form-label">
                   Date of Birth
                 </label>
                 <div className="relative">
@@ -546,11 +527,7 @@ const Register = () => {
                     required
                     value={formData.dateOfBirth}
                     onChange={handleChange}
-                    className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                      errors.dateOfBirth 
-                        ? 'border-red-300 dark:border-red-600' 
-                        : 'border-gray-300 dark:border-gray-600'
-                    } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                    className={`form-input pl-10 pr-3 ${errors.dateOfBirth ? 'border-red-300 dark:border-red-600' : ''}`}
                   />
                 </div>
                 {errors.dateOfBirth && (
@@ -562,7 +539,7 @@ const Register = () => {
               </div>
 
               <div>
-                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="gender" className="form-label">
                   Gender
                 </label>
                 <select
@@ -571,11 +548,7 @@ const Register = () => {
                   required
                   value={formData.gender}
                   onChange={handleChange}
-                  className={`block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.gender 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input ${errors.gender ? 'border-red-300 dark:border-red-600' : ''}`}
                 >
                   <option value="">Select gender</option>
                   <option value="male">Male</option>
@@ -591,9 +564,8 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Role Selection */}
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="role" className="form-label">
                 Role
               </label>
               <div className="relative">
@@ -605,22 +577,17 @@ const Register = () => {
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.role 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input pl-10 pr-3 ${errors.role ? 'border-red-300 dark:border-red-600' : ''}`}
                 >
                   <option value="member">Community Member</option>
-                  <option value="judge">Judge</option>
+                  <option value="judge">Judge (requires approval)</option>
                   {isFirstUser && <option value="admin">Admin (First User)</option>}
                 </select>
               </div>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {isFirstUser 
-                  ? "You're the first user! You can choose to be an admin with full system access."
-                  : "Choose your role in the community. Members can file cases and vote, Judges can preside over cases. Admin role is only available for the first user or by invitation."
-                }
+                {isFirstUser
+                  ? "You're the first user. You can choose to be an admin with full system access."
+                  : 'Judges must be approved by an admin before they can access the judge dashboard.'}
               </p>
               {errors.role && (
                 <div className="flex items-center mt-1 text-sm text-red-600 dark:text-red-400">
@@ -630,11 +597,10 @@ const Register = () => {
               )}
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
                 <div className="flex items-center">
@@ -647,8 +613,7 @@ const Register = () => {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="mt-6">
+          <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300 dark:border-gray-600" />
@@ -661,20 +626,21 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Google Registration - Temporarily Disabled */}
-          {/* <div className="mt-6">
+          <div
+            className="mt-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 shadow-sm"
+            style={{ colorScheme: isDark ? 'dark' : 'light' }}
+          >
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
-              theme="outline"
+              theme={isDark ? 'filled_black' : 'outline'}
               size="large"
               text="signup_with"
               shape="rectangular"
               width="100%"
             />
-          </div> */}
+          </div>
 
-          {/* Terms and Privacy */}
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">
               By creating an account, you agree to our{' '}
@@ -693,28 +659,24 @@ const Register = () => {
               </Link>
             </p>
           </div>
-        </div>
 
-
-
-        {/* Sign In Link */}
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Already have an account?{' '}
-            <Link
-              to="/login"
-              className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
-            >
-              Sign in here
-            </Link>
-          </p>
+          <div className="text-center mt-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Already have an account?{' '}
+              <Link
+                to="/login"
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+              >
+                Sign in here
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Terms Modal */}
       <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
     </div>
   )
 }
 
-export default Register 
+export default Register
