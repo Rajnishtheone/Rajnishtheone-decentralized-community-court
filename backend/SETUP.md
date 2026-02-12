@@ -40,8 +40,8 @@ CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 
-# OpenAI Configuration
-OPENAI_API_KEY=your-openai-api-key
+# Gemini Configuration
+GEMINI_API_KEY=your-gemini-api-key
 
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=900000
