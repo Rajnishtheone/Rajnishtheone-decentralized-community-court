@@ -106,7 +106,7 @@ const Verifications = () => {
             placeholder="Search cases by title, description, or filer..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="input w-full pl-10"
+            className="form-input w-full pl-10"
           />
         </div>
       </div>
@@ -269,7 +269,7 @@ const Verifications = () => {
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="form-label">
                         Action
                       </label>
                       <select
@@ -278,7 +278,7 @@ const Verifications = () => {
                           ...verificationData,
                           action: e.target.value
                         })}
-                        className="input w-full"
+                        className="form-input w-full"
                       >
                         <option value="verify">Verify Target</option>
                         <option value="reject">Reject Verification</option>
@@ -287,7 +287,7 @@ const Verifications = () => {
 
                     {verificationData.action === 'verify' && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="form-label">
                           Select Target User
                         </label>
                         <select
@@ -296,7 +296,7 @@ const Verifications = () => {
                             ...verificationData,
                             verifiedTargetId: e.target.value
                           })}
-                          className="input w-full"
+                          className="form-input w-full"
                         >
                           <option value="">Select a user...</option>
                           {users?.map(user => (
@@ -309,7 +309,7 @@ const Verifications = () => {
                     )}
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="form-label">
                         Verification Notes
                       </label>
                       <textarea
@@ -319,7 +319,7 @@ const Verifications = () => {
                           verificationNotes: e.target.value
                         })}
                         rows={3}
-                        className="input w-full"
+                        className="form-textarea w-full"
                         placeholder="Add notes about the verification process..."
                       />
                     </div>
