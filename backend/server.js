@@ -7,14 +7,15 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
-// import mongoSanitize from 'express-mongo-sanitize'; // temporarily disabled
-// import xss from 'xss-clean'; // temporarily disabled
+// import mongoSanitize from 'express-mongo-sanitize';
+import xss from 'xss-clean';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import http from 'http';
 import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 
 import authRoutes from './src/routes/authRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
@@ -22,7 +23,9 @@ import caseRoutes from './src/routes/caseRoutes.js';
 import commentRoutes from './src/routes/commentRoutes.js';
 import voteRoutes from './src/routes/voteRoutes.js';
 import analyticsRoutes from './src/routes/analyticsRoutes.js';
+import socialRoutes from './src/routes/socialRoutes.js';
 import { errorHandler } from './src/middlewares/errorMiddleware.js';
+import User from './src/models/User.js';
 
 dotenv.config();
 
@@ -58,7 +61,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Temporarily disabled for compatibility issues:
+// Sanitize and XSS protection
 // app.use(mongoSanitize());
 // app.use(xss());
 
@@ -113,6 +116,7 @@ const authLimiter = rateLimit({
 
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/users/forgot-password', authLimiter);
 
 // ====================
@@ -124,6 +128,7 @@ app.use('/api/cases', caseRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/votes', voteRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/social', socialRoutes);
 
 // ====================
 // Root Route
@@ -155,8 +160,41 @@ app.use(errorHandler);
 // ====================
 // Socket.IO Events
 // ====================
+io.use(async (socket, next) => {
+  const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('_id');
+    if (user) {
+      socket.userId = `${user._id}`;
+    }
+  } catch (error) {
+    // Allow connection without user context
+  }
+
+  next();
+});
+
 io.on('connection', (socket) => {
   console.log('📡 Socket connected:', socket.id);
+
+  if (socket.userId) {
+    socket.join(`user:${socket.userId}`);
+  }
+
+  socket.on('typing', ({ toUserId, conversationId }) => {
+    if (!socket.userId || !toUserId) return;
+    io.to(`user:${toUserId}`).emit('typing', { fromUserId: socket.userId, conversationId });
+  });
+
+  socket.on('stop_typing', ({ toUserId, conversationId }) => {
+    if (!socket.userId || !toUserId) return;
+    io.to(`user:${toUserId}`).emit('stop_typing', { fromUserId: socket.userId, conversationId });
+  });
 
   socket.on('disconnect', () => {
     console.log('❌ Socket disconnected:', socket.id);
@@ -168,15 +206,15 @@ io.on('connection', (socket) => {
 // ====================
 const PORT = process.env.PORT || 5000;
 mongoose.connect(process.env.MONGO_URI)
-.then(() => {
-  console.log('✅ MongoDB connected successfully');
-  server.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📁 Static files served from: ${path.join(__dirname, 'uploads')}`);
-    console.log(`🌐 CORS enabled for specified domains`);
+  .then(() => {
+    console.log('✅ MongoDB connected successfully');
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`📁 Static files served from: ${path.join(__dirname, 'uploads')}`);
+      console.log(`🌐 CORS enabled for specified domains`);
+    });
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err.message);
+    process.exit(1);
   });
-})
-.catch((err) => {
-  console.error('❌ MongoDB connection error:', err.message);
-  process.exit(1);
-});
