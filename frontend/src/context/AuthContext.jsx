@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import axiosInstance from '../lib/axiosInstance.js'
+import { connectSocket, disconnectSocket } from '../lib/socket'
 
 const AuthContext = createContext();
 
@@ -32,6 +33,7 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         const response = await axiosInstance.get('/users/profile/me');
         setUser(response.data);
+        connectSocket();
       }
     } catch (error) {
       localStorage.removeItem('token')
@@ -43,7 +45,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const formData = new FormData()
-      
+
       // Add all user data to formData
       Object.keys(userData).forEach(key => {
         if (userData[key] !== null && userData[key] !== undefined) {
@@ -64,12 +66,13 @@ export const AuthProvider = ({ children }) => {
       const { token, user: userDataFromResponse } = response.data
       localStorage.setItem('token', token)
       setUser(userDataFromResponse)
+      connectSocket();
       return { success: true }
     } catch (error) {
       console.error('Registration error in AuthContext:', error)
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Registration failed' 
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Registration failed'
       }
     }
   }
@@ -80,11 +83,12 @@ export const AuthProvider = ({ children }) => {
       const { token, user: userData } = response.data
       localStorage.setItem('token', token)
       setUser(userData)
+      connectSocket();
       return { success: true, user: userData }
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Login failed' 
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Login failed'
       }
     }
   }
@@ -93,53 +97,43 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axiosInstance.post('/auth/google', { credential: credentialResponse.credential })
       const { token, user: userData, requiresProfileCompletion } = response.data
-      
+
       if (requiresProfileCompletion) {
         setGoogleData(userData)
-        return { success: true, requiresProfileCompletion: true }
+        localStorage.setItem('googleData', JSON.stringify(userData))
+        return { success: true, requiresProfileCompletion: true, googleData: userData }
       }
-      
+
       localStorage.setItem('token', token)
       setUser(userData)
+      connectSocket();
       return { success: true }
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Google login failed' 
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Google login failed'
       }
     }
   }
 
-  const completeGoogleProfile = async (userData) => {
+  const completeGoogleProfile = async (googleData, profileData) => {
     try {
-      const formData = new FormData()
-      
-      Object.keys(userData).forEach(key => {
-        if (userData[key] !== null && userData[key] !== undefined) {
-          if (key === 'profilePic' && userData[key] instanceof File) {
-            formData.append('profilePic', userData[key])
-          } else {
-            formData.append(key, userData[key])
-          }
-        }
-      })
-
-      const response = await axiosInstance.post('/auth/complete-profile', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await axiosInstance.post('/auth/google/complete-profile', {
+        googleData,
+        profileData
       })
 
       const { token, user: userDataFromResponse } = response.data
       localStorage.setItem('token', token)
       setUser(userDataFromResponse)
       setGoogleData(null)
+      connectSocket();
       navigate('/dashboard')
       return { success: true }
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Profile completion failed' 
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Profile completion failed'
       }
     }
   }
@@ -148,6 +142,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token')
     setUser(null)
     setGoogleData(null)
+    disconnectSocket();
     navigate('/')
     toast.success('Logged out successfully')
   }
@@ -155,7 +150,7 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (userData) => {
     try {
       const formData = new FormData()
-      
+
       Object.keys(userData).forEach(key => {
         if (userData[key] !== null && userData[key] !== undefined) {
           if (key === 'profilePic' && userData[key] instanceof File) {
@@ -167,7 +162,7 @@ export const AuthProvider = ({ children }) => {
       })
 
       const response = await axiosInstance.put('/users/update/me', formData, {
-        headers: { 
+        headers: {
           'Content-Type': 'multipart/form-data',
         },
       })
@@ -175,9 +170,9 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data.user)
       return { success: true }
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Profile update failed' 
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Profile update failed'
       }
     }
   }
@@ -187,9 +182,9 @@ export const AuthProvider = ({ children }) => {
       await axiosInstance.put('/users/change-password', { currentPassword, newPassword })
       return { success: true }
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Password change failed' 
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Password change failed'
       }
     }
   }
@@ -199,33 +194,45 @@ export const AuthProvider = ({ children }) => {
       await axiosInstance.post('/users/request-judge', { reason })
       return { success: true }
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Judge request failed' 
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Judge request failed'
+      }
+    }
+  }
+
+  const cancelJudgeRequest = async () => {
+    try {
+      await axiosInstance.post('/users/judge-requests/cancel')
+      return { success: true }
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Cancel request failed'
       }
     }
   }
 
   const forgotPassword = async (email) => {
     try {
-      await axiosInstance.post('/users/forgot-password', { email })
+      await axiosInstance.post('/auth/forgot-password', { email })
       return { success: true }
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Password reset failed' 
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Password reset failed'
       }
     }
   }
 
   const resetPassword = async (token, newPassword) => {
     try {
-      await axiosInstance.post('/users/reset-password', { token, newPassword })
+      await axiosInstance.post('/auth/reset-password', { token, newPassword })
       return { success: true }
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Password reset failed' 
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Password reset failed'
       }
     }
   }
@@ -242,6 +249,7 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     changePassword,
     requestJudgeRole,
+    cancelJudgeRequest,
     forgotPassword,
     resetPassword
   }
