@@ -4,22 +4,15 @@ import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 import JudgeRequest from '../components/JudgeRequest'
 import { Edit3, Save, X, Lock, Eye, EyeOff, Gavel } from 'lucide-react'
+import { getProfilePicUrl } from '../utils/media'
 
 const Profile = () => {
-  const { user, updateProfile, changePassword, requestJudgeRole } = useAuth()
+  const { user, updateProfile, changePassword, requestJudgeRole, cancelJudgeRequest } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [showJudgeRequest, setShowJudgeRequest] = useState(false)
   const [showChangePassword, setShowChangePassword] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
-  
-  // Helper function to get correct profile picture URL
-  const getProfilePicUrl = (profilePic) => {
-    if (!profilePic) return '/default-avatar.svg'
-    if (profilePic.startsWith('http')) return profilePic
-    if (profilePic.startsWith('/uploads/')) return `http://localhost:5000${profilePic}`
-    return `http://localhost:5000/uploads/${profilePic}`
-  }
   
   const [previewUrl, setPreviewUrl] = useState(getProfilePicUrl(user?.profilePic))
   
@@ -202,6 +195,16 @@ const Profile = () => {
     }
   }
 
+  const handleCancelJudgeRequest = async () => {
+    const result = await cancelJudgeRequest()
+    if (result.success) {
+      toast.success('Judge request cancelled')
+      window.location.reload()
+    } else {
+      toast.error(result.error || 'Failed to cancel judge request')
+    }
+  }
+
   const getJudgeRequestStatus = () => {
     switch (user?.judgeRequestStatus) {
       case 'pending':
@@ -285,14 +288,14 @@ const Profile = () => {
                 <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label className="form-label">
                         Full Name
                       </label>
                       <input
                         type="text"
                         {...registerProfile('name', { required: 'Name is required' })}
                         disabled={!isEditing}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                        className={`form-input ${
                           profileErrors.name
                             ? 'border-destructive bg-destructive/10'
                             : 'border-border bg-background'
@@ -306,7 +309,7 @@ const Profile = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label className="form-label">
                         Email
                       </label>
                       <input
@@ -319,7 +322,7 @@ const Profile = () => {
                           }
                         })}
                         disabled={!isEditing}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                        className={`form-input ${
                           profileErrors.email
                             ? 'border-destructive bg-destructive/10'
                             : 'border-border bg-background'
@@ -335,7 +338,7 @@ const Profile = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label className="form-label">
                         Phone Number
                       </label>
                       <input
@@ -348,7 +351,7 @@ const Profile = () => {
                           }
                         })}
                         disabled={!isEditing}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                        className={`form-input ${
                           profileErrors.phone
                             ? 'border-destructive bg-destructive/10'
                             : 'border-border bg-background'
@@ -362,13 +365,13 @@ const Profile = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label className="form-label">
                         Gender
                       </label>
                       <select
                         {...registerProfile('gender', { required: 'Gender is required' })}
                         disabled={!isEditing}
-                        className={`w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background transition-colors ${
+                        className={`form-input ${
                           !isEditing ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
                       >
@@ -381,14 +384,14 @@ const Profile = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label className="form-label">
                         Building
                       </label>
                       <input
                         type="text"
                         {...registerProfile('building', { required: 'Building is required' })}
                         disabled={!isEditing}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                        className={`form-input ${
                           profileErrors.building
                             ? 'border-destructive bg-destructive/10'
                             : 'border-border bg-background'
@@ -402,14 +405,14 @@ const Profile = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label className="form-label">
                         Flat Number
                       </label>
                       <input
                         type="text"
                         {...registerProfile('flat', { required: 'Flat number is required' })}
                         disabled={!isEditing}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                        className={`form-input ${
                           profileErrors.flat
                             ? 'border-destructive bg-destructive/10'
                             : 'border-border bg-background'
@@ -474,14 +477,14 @@ const Profile = () => {
                     {showChangePassword && (
                       <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-4 bg-accent/50 p-4 rounded-lg">
                         <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
+                          <label className="form-label">
                             Current Password
                           </label>
                           <div className="relative">
                             <input
                               type={showCurrentPassword ? 'text' : 'password'}
                               {...registerPassword('currentPassword', { required: 'Current password is required' })}
-                              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                              className={`form-input ${
                                 passwordErrors.currentPassword
                                   ? 'border-destructive bg-destructive/10'
                                   : 'border-border bg-background'
@@ -507,7 +510,7 @@ const Profile = () => {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
+                          <label className="form-label">
                             New Password
                           </label>
                           <div className="relative">
@@ -520,7 +523,7 @@ const Profile = () => {
                                   message: 'Password must be at least 6 characters'
                                 }
                               })}
-                              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                              className={`form-input ${
                                 passwordErrors.newPassword
                                   ? 'border-destructive bg-destructive/10'
                                   : 'border-border bg-background'
@@ -546,7 +549,7 @@ const Profile = () => {
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-foreground mb-2">
+                          <label className="form-label">
                             Re-enter New Password
                           </label>
                           <div className="relative">
@@ -560,7 +563,7 @@ const Profile = () => {
                                   }
                                 }
                               })}
-                              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors ${
+                              className={`form-input ${
                                 passwordErrors.confirmPassword
                                   ? 'border-destructive bg-destructive/10'
                                   : 'border-border bg-background'
@@ -694,7 +697,7 @@ const Profile = () => {
                     )}
                     
                     {user?.judgeRequestStatus === 'pending' && (
-                      <div className="text-center py-4">
+                      <div className="text-center py-4 space-y-3">
                         <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
                           <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -702,6 +705,12 @@ const Profile = () => {
                           </svg>
                           Request Pending Review
                         </div>
+                        <button
+                          onClick={handleCancelJudgeRequest}
+                          className="text-sm text-red-600 hover:text-red-700"
+                        >
+                          Cancel Request
+                        </button>
                       </div>
                     )}
                     
