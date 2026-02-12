@@ -8,6 +8,7 @@ import {
     updateCaseStatus,
     commentOnCase,
     suggestVerdict,
+    aiCaseChat,
     getPendingCases,
     deleteCase,
     verifyCase,
@@ -24,10 +25,10 @@ import { createCaseSchema } from '../validators/caseValidators.js';
 const router = express.Router();
 
 // ✅ Create case with evidence upload
-router.post('/', 
-    protect, 
-    caseCreationLimiter, 
-    cloudinaryUpload.single('evidence'), 
+router.post('/',
+    protect,
+    caseCreationLimiter,
+    cloudinaryUpload.single('evidence'),
     handleUploadError,
     validateBody(createCaseSchema),
     createCase
@@ -35,11 +36,13 @@ router.post('/',
 
 // ✅ View cases (public)
 router.get('/', getAllCases);
-router.get('/:id', getCaseById);
 
-// ✅ Judge/Admin specific routes
+// ✅ Judge/Admin specific routes (must come before /:id)
 router.get('/verifications/pending', protect, authorizeRoles('judge', 'admin'), getPendingCases);
 router.get('/judge/dashboard', protect, authorizeRoles('judge', 'admin'), getJudgeDashboard);
+
+// ✅ Case details
+router.get('/:id', getCaseById);
 
 // ✅ Update verdict or status (judge/admin only)
 router.put('/:id/verdict', protect, authorizeRoles('judge', 'admin'), updateCaseVerdict);
@@ -60,5 +63,8 @@ router.post('/:caseId/comment', protect, commentOnCase);
 
 // ✅ AI Verdict Suggestion
 router.get('/:caseId/ai-verdict', protect, suggestVerdict);
+
+// ✅ AI Chat Assistant (judge/admin)
+router.post('/:id/ai-chat', protect, authorizeRoles('judge', 'admin'), aiCaseChat);
 
 export default router;
