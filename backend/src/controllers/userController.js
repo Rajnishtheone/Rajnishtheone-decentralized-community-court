@@ -1,21 +1,26 @@
 // =======================
 // IMPORTS
 // =======================
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Case from '../models/Case.js';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
 import { sendEmail } from '../utils/emailService.js';
-import { forgotPasswordTemplate } from '../utils/emailTemplates.js';
 
 // =======================
 // 1. GET USER PROFILE BY ID (Protected)
 // =======================
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await User.findById(req.params.id).select('-password blockedUsers');
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const viewer = await User.findById(req.user.id).select('blockedUsers');
+    const viewerBlocked = (viewer?.blockedUsers || []).some((id) => `${id}` === `${user._id}`);
+    const userBlocked = (user?.blockedUsers || []).some((id) => `${id}` === `${viewer._id}`);
+    if (viewerBlocked || userBlocked) {
+      return res.status(403).json({ message: 'Profile not accessible' });
+    }
 
     res.status(200).json(user);
   } catch (error) {
@@ -69,7 +74,7 @@ const updateUserProfile = async (req, res) => {
     if (req.body.building) user.building = req.body.building;
     if (req.body.flat) user.flat = req.body.flat;
     if (req.body.gender) user.gender = req.body.gender;
-    
+
     // Update profile picture if uploaded
     if (req.file) {
       // Store the file path for local storage
@@ -131,31 +136,41 @@ const getUserDashboard = async (req, res) => {
     // Get user's votes
     const userVotes = await Case.aggregate([
       { $unwind: '$votes' },
-      { $match: { 'votes.user': userId } },
+      { $match: { 'votes.votedBy': new mongoose.Types.ObjectId(userId) } },
       { $count: 'totalVotes' }
     ]);
     const totalVotes = userVotes.length > 0 ? userVotes[0].totalVotes : 0;
 
     // Calculate win rate (cases where user's vote matched final verdict)
-    const resolvedCases = userCases.filter(case_ => case_.status === 'resolved');
+    const resolvedCases = userCases.filter(case_ => case_.status === 'Verdict Reached' || case_.status === 'Closed');
     const wins = resolvedCases.filter(case_ => {
-      const userVote = case_.votes.find(vote => vote.user.toString() === userId);
-      return userVote && userVote.vote === case_.verdict;
+      const userVote = case_.votes.find(vote => vote.votedBy.toString() === userId);
+      if (!userVote || !case_.verdict) return false;
+      if (!['yes', 'no'].includes(case_.verdict)) return false;
+      return userVote.vote === case_.verdict;
     }).length;
     const winRate = resolvedCases.length > 0 ? Math.round((wins / resolvedCases.length) * 100) : 0;
 
     // Calculate reputation (based on activity and accuracy)
     const reputation = Math.round((totalVotes * 10) + (winRate * 2));
 
+    // Comment activity count (for dashboard)
+    const commentCountAgg = await Case.aggregate([
+      { $unwind: '$comments' },
+      { $match: { 'comments.commentedBy': new mongoose.Types.ObjectId(userId) } },
+      { $count: 'totalComments' }
+    ]);
+    const commentCount = commentCountAgg.length > 0 ? commentCountAgg[0].totalComments : 0;
+
     // Get published cases for community voting (excluding user's own cases)
-    const publishedCases = await Case.find({ 
+    const publishedCases = await Case.find({
       status: 'Published for Voting',
       filedBy: { $ne: userId } // Exclude user's own cases
     })
-    .populate('filedBy', 'username')
-    .populate('votes.votedBy', 'username')
-    .sort({ createdAt: -1 })
-    .limit(10);
+      .populate('filedBy', 'username')
+      .populate('votes.votedBy', 'username')
+      .sort({ createdAt: -1 })
+      .limit(10);
 
     // Get user's filed cases for the dashboard
     const userFiledCases = await Case.find({ filedBy: userId })
@@ -168,7 +183,7 @@ const getUserDashboard = async (req, res) => {
       const yesVotes = caseItem.votes.filter(vote => vote.vote === 'yes').length;
       const noVotes = caseItem.votes.filter(vote => vote.vote === 'no').length;
       const totalVotes = yesVotes + noVotes;
-      
+
       return {
         ...caseItem.toObject(),
         yesVotes,
@@ -181,7 +196,7 @@ const getUserDashboard = async (req, res) => {
       const yesVotes = caseItem.votes.filter(vote => vote.vote === 'yes').length;
       const noVotes = caseItem.votes.filter(vote => vote.vote === 'no').length;
       const totalVotes = yesVotes + noVotes;
-      
+
       return {
         ...caseItem.toObject(),
         yesVotes,
@@ -190,11 +205,24 @@ const getUserDashboard = async (req, res) => {
       };
     });
 
+    // Community stats for sidebar
+    const [totalUsers, totalCases, approvedCases] = await Promise.all([
+      User.countDocuments({ isActive: true }),
+      Case.countDocuments(),
+      Case.countDocuments({ status: { $in: ['Verdict Reached', 'Closed'] } })
+    ]);
+
     res.status(200).json({
       casesFiled,
       totalVotes,
       winRate,
       reputation,
+      commentCount,
+      community: {
+        totalUsers,
+        totalCases,
+        approvedCases
+      },
       publishedCases: casesWithVoteStats, // Cases available for voting
       filedCases: userCasesWithVoteStats // User's own cases
     });
@@ -203,59 +231,6 @@ const getUserDashboard = async (req, res) => {
   }
 };
 
-// =======================
-// 6. FORGOT PASSWORD - Send Reset Email
-// =======================
-const passwordResetTokens = {}; // In-memory (for demo); in production, store in DB with expiry
-
-const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    // Generate token
-    const token = crypto.randomBytes(20).toString('hex');
-    passwordResetTokens[token] = { email, expires: Date.now() + 1000 * 60 * 15 }; // 15 min expiry
-
-    // Send email
-    const resetLink = `http://localhost:5173/reset-password/${token}`;
-    await sendEmail({
-      to: email,
-      subject: '🔐 Reset Your Password',
-      html: forgotPasswordTemplate(user.name || user.username, resetLink)
-    });
-
-    res.status(200).json({ message: 'Reset link sent to email' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// =======================
-// 7. RESET PASSWORD - Accept Token
-// =======================
-const resetPassword = async (req, res) => {
-  try {
-    const { token, newPassword } = req.body;
-
-    const record = passwordResetTokens[token];
-    if (!record || record.expires < Date.now()) {
-      return res.status(400).json({ message: 'Invalid or expired token' });
-    }
-
-    const user = await User.findOne({ email: record.email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    user.password = await bcrypt.hash(newPassword, 10);
-    await user.save();
-
-    delete passwordResetTokens[token];
-    res.status(200).json({ message: 'Password updated successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
 
 // =======================
 // 8. CONTACT US
@@ -295,7 +270,7 @@ const contactUs = async (req, res) => {
 const requestJudgeRole = async (req, res) => {
   try {
     const { reason } = req.body;
-    
+
     if (!reason) {
       return res.status(400).json({ message: 'Reason is required for judge request' });
     }
@@ -322,7 +297,7 @@ const requestJudgeRole = async (req, res) => {
       // Check if 30 days have passed since rejection
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+
       if (user.judgeRequestDate && user.judgeRequestDate > thirtyDaysAgo) {
         return res.status(400).json({ message: 'You can submit a new request after 30 days from rejection' });
       }
@@ -339,7 +314,7 @@ const requestJudgeRole = async (req, res) => {
       { new: true, runValidators: false } // Don't run validators for partial updates
     );
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'Judge request submitted successfully',
       user: {
         id: updatedUser._id,
@@ -360,8 +335,8 @@ const requestJudgeRole = async (req, res) => {
 // =======================
 const getPendingJudgeRequests = async (req, res) => {
   try {
-    const requests = await User.find({ 
-      judgeRequestStatus: 'pending' 
+    const requests = await User.find({
+      judgeRequestStatus: 'pending'
     }).select('_id name email judgeRequestReason judgeRequestDate profilePic');
 
     res.status(200).json(requests);
@@ -394,11 +369,18 @@ const reviewJudgeRequest = async (req, res) => {
       user.judgeRequestStatus = 'rejected';
       user.judgeRequestRejectedAt = new Date();
       user.judgeRequestReviewReason = reason;
+    } else if (action === 'member') {
+      user.role = 'member';
+      user.judgeRequestStatus = 'none';
+      user.judgeRequestReason = '';
+      user.judgeRequestDate = null;
+      user.judgeRequestReviewedAt = new Date();
+      user.judgeRequestReviewReason = reason || 'Set to member by admin';
     }
 
     await user.save();
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: `Judge request ${action}d successfully`,
       user: {
         id: user._id,
@@ -419,10 +401,48 @@ const reviewJudgeRequest = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({}).select('-password').sort({ createdAt: -1 });
-    
+
     res.status(200).json(users);
   } catch (error) {
     console.error('Error getting all users:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// =======================
+// 11.1 CANCEL JUDGE REQUEST (Member)
+// =======================
+const cancelJudgeRequest = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user.judgeRequestStatus !== 'pending') {
+      return res.status(400).json({ message: 'No pending judge request to cancel' });
+    }
+
+    user.judgeRequestStatus = 'none';
+    user.judgeRequestReason = '';
+    user.judgeRequestDate = null;
+    await user.save();
+
+    res.status(200).json({ message: 'Judge request cancelled' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// =======================
+// 12.1 GET USERS FOR VERIFICATION (Judge/Admin)
+// =======================
+const getUsersForVerification = async (req, res) => {
+  try {
+    const users = await User.find({ isActive: true })
+      .select('_id username email building flat profilePic')
+      .sort({ createdAt: -1 });
+    res.status(200).json({ users });
+  } catch (error) {
+    console.error('Error getting users for verification:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -433,19 +453,19 @@ const getAllUsers = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Prevent admin from deleting themselves
     if (id === req.user.id) {
       return res.status(400).json({ message: 'You cannot delete your own account' });
     }
-    
+
     const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     await User.findByIdAndDelete(id);
-    
+
     res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Error deleting user:', error);
@@ -460,13 +480,13 @@ export {
   updateUserProfile,
   changePassword,
   getUserDashboard,
-  forgotPassword,
-  resetPassword,
   contactUs,
   requestJudgeRole,
   reviewJudgeRequest,
   getPendingJudgeRequests,
   getAllUsers,
+  getUsersForVerification,
+  cancelJudgeRequest,
   deleteUser
 }
 
