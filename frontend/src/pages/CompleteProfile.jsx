@@ -91,7 +91,7 @@ const CompleteProfile = () => {
           <div className="rounded-md shadow-sm space-y-4">
             {/* Phone Number */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="phone" className="form-label">
                 Phone Number *
               </label>
               <input
@@ -101,7 +101,7 @@ const CompleteProfile = () => {
                 required
                 value={formData.phone}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-white dark:bg-gray-800"
+                className="form-input"
                 placeholder="Enter your 10-digit phone number"
                 pattern="[0-9]{10}"
                 maxLength="10"
@@ -110,7 +110,7 @@ const CompleteProfile = () => {
 
             {/* Building */}
             <div>
-              <label htmlFor="building" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="building" className="form-label">
                 Building/Block *
               </label>
               <input
@@ -120,14 +120,14 @@ const CompleteProfile = () => {
                 required
                 value={formData.building}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-white dark:bg-gray-800"
+                className="form-input"
                 placeholder="Enter your building/block name"
               />
             </div>
 
             {/* Flat */}
             <div>
-              <label htmlFor="flat" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="flat" className="form-label">
                 Flat/House Number *
               </label>
               <input
@@ -137,14 +137,14 @@ const CompleteProfile = () => {
                 required
                 value={formData.flat}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-white dark:bg-gray-800"
+                className="form-input"
                 placeholder="Enter your flat/house number"
               />
             </div>
 
             {/* Date of Birth */}
             <div>
-              <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="dateOfBirth" className="form-label">
                 Date of Birth *
               </label>
               <input
@@ -154,14 +154,14 @@ const CompleteProfile = () => {
                 required
                 value={formData.dateOfBirth}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-white dark:bg-gray-800"
+                className="form-input"
                 max={new Date().toISOString().split('T')[0]}
               />
             </div>
 
             {/* Gender */}
             <div>
-              <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="gender" className="form-label">
                 Gender *
               </label>
               <select
@@ -170,7 +170,7 @@ const CompleteProfile = () => {
                 required
                 value={formData.gender}
                 onChange={handleChange}
-                className="appearance-none relative block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-white dark:bg-gray-800"
+                className="form-input"
               >
                 <option value="">Select your gender</option>
                 <option value="male">Male</option>
