@@ -16,13 +16,15 @@ export const getCommunityStats = async (req, res) => {
     ] = await Promise.all([
       User.countDocuments({ isActive: true }),
       Case.countDocuments(),
-      Case.countDocuments({ isApproved: true }),
-      Case.countDocuments({ status: 'Sent' }),
+      Case.countDocuments({ status: { $in: ['Verdict Reached', 'Closed'] } }),
+      Case.countDocuments({ status: 'Pending Review' }),
       Case.aggregate([
-        { $group: { _id: null, total: { $sum: { $size: '$votes' } } } }
+        { $project: { voteCount: { $size: '$votes' } } },
+        { $group: { _id: null, total: { $sum: '$voteCount' } } }
       ]),
       Case.aggregate([
-        { $group: { _id: null, total: { $sum: { $size: '$comments' } } } }
+        { $project: { commentCount: { $size: '$comments' } } },
+        { $group: { _id: null, total: { $sum: '$commentCount' } } }
       ])
     ]);
 
@@ -112,7 +114,7 @@ export const getTopPerformers = async (req, res) => {
   try {
     // Top case creators
     const topCreators = await Case.aggregate([
-      { $group: { _id: '$createdBy', caseCount: { $sum: 1 } } },
+      { $group: { _id: '$filedBy', caseCount: { $sum: 1 } } },
       { $sort: { caseCount: -1 } },
       { $limit: 10 },
       {
