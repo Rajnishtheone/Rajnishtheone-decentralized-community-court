@@ -33,10 +33,11 @@ A modern, full-stack web application that enables communities to collaboratively
 - **Comment System**: Public and judge-only commenting
 - **Discussion Threads**: Organized case discussions
 - **User Profiles**: Detailed user information and activity tracking
+- **Social Circle**: Friends, private messaging, and posts feed
 
 ### 🤖 AI Integration
 
-- **AI Verdict Suggestions**: OpenAI-powered intelligent case analysis
+- **AI Verdict Suggestions**: Gemini-powered intelligent case analysis
 - **Smart Recommendations**: AI-assisted decision making
 - **Case Analysis**: Automated case evaluation and insights
 
@@ -74,7 +75,7 @@ A modern, full-stack web application that enables communities to collaboratively
 - **Multer** - File upload handling
 - **Cloudinary** - Cloud media storage
 - **Nodemailer** - Email functionality
-- **OpenAI API** - AI integration
+- **Google Gemini API** - AI integration
 - **PDFKit** - PDF generation
 - **Joi** - Data validation
 - **Helmet** - Security middleware
@@ -237,7 +238,7 @@ A modern, full-stack web application that enables communities to collaboratively
 
 1. Install MongoDB locally or use MongoDB Atlas
 2. Create a database named `dcc-court`
-3. Update the `MONGODB_URI` in your `.env` file
+3. Update the `MONGO_URI` in your `.env` file
 
 ### Email Setup
 
@@ -251,10 +252,20 @@ A modern, full-stack web application that enables communities to collaboratively
 2. Get your cloud name, API key, and API secret
 3. Update the Cloudinary configuration in your `.env` file
 
-### OpenAI Setup
+### Gemini Setup
 
-1. Get an API key from OpenAI
-2. Update the `OPENAI_API_KEY` in your `.env` file
+1. Get an API key from Google Gemini
+2. Update the `GEMINI_API_KEY` in your `.env` file
+
+### Dev Setup (Manual Base URL)
+
+For local development, keep the backend on `5000` and point the frontend directly:
+
+Set this in `frontend/.env`:
+
+```
+VITE_API_BASE_URL=http://localhost:5000/api
+```
 
 ## 🧪 Testing
 
@@ -307,7 +318,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- OpenAI for AI integration capabilities
+- Google Gemini for AI integration capabilities
 - MongoDB for the database solution
 - The React and Node.js communities for excellent documentation
 - All contributors and testers who helped improve this project
