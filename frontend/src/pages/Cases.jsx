@@ -1,9 +1,13 @@
-import { useQuery } from 'react-query'
+import { useEffect } from 'react'
+import { useQuery, useQueryClient } from 'react-query'
 import { Link } from 'react-router-dom'
 import api from '../lib/api'
+import { socket } from '../lib/socket'
 import { FileText, Clock, Users, Eye } from 'lucide-react'
 
 const Cases = () => {
+  const queryClient = useQueryClient()
+
   const { data: cases, isLoading } = useQuery(
     'cases',
     async () => {
@@ -11,6 +15,16 @@ const Cases = () => {
       return response.data
     }
   )
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      queryClient.invalidateQueries('cases')
+    }
+    socket.on('case_updated', handleUpdate)
+    return () => {
+      socket.off('case_updated', handleUpdate)
+    }
+  }, [queryClient])
 
   if (isLoading) {
     return (
@@ -34,7 +48,7 @@ const Cases = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" aria-label="Cases list">
         {cases?.cases?.map((caseItem) => (
-          <div key={caseItem._id} className="bg-white rounded-lg shadow p-6">
+          <div key={caseItem._id} className="bg-white rounded-lg shadow p-6 hover-lift">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">{caseItem.title}</h3>
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
