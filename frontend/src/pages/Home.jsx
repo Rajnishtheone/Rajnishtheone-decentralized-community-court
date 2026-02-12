@@ -1,31 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import api from '../lib/api';
 import {
-  Scale,
   Users,
   Shield,
   Gavel,
   MessageSquare,
   TrendingUp,
   CheckCircle,
-  Clock,
-  Star,
   ArrowRight,
-  Menu,
-  X,
   Mail,
 } from 'lucide-react';
 
 export default function HomePage() {
   const { user } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [sceneClosed, setSceneClosed] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('dcc_scene_overlay_closed');
+    if (stored === 'true') {
+      setSceneClosed(true);
+    }
+  }, []);
+
+  const handleCloseScene = () => {
+    setSceneClosed(true);
+    localStorage.setItem('dcc_scene_overlay_closed', 'true');
+  };
 
   // Fetch community stats
   const { data: stats, isLoading: statsLoading } = useQuery(
@@ -53,112 +59,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-background to-purple-50 dark:from-gray-900 dark:via-background dark:to-gray-900 theme-transition">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border theme-transition">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
-                <Scale className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                DCC Court
-              </span>
-            </Link>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </a>
-              <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
-                How It Works
-              </a>
-              <a href="#community" className="text-muted-foreground hover:text-foreground transition-colors">
-                Community
-              </a>
-              <a href="#contact" className="text-muted-foreground hover:text-foreground transition-colors">
-                Contact
-              </a>
-              {user ? (
-                <Link to="/dashboard">
-                  <Button variant="outline">Dashboard</Button>
-                </Link>
-              ) : (
-                <Link to="/login">
-                  <Button variant="outline">Login</Button>
-                </Link>
-              )}
-              {user ? (
-                <Link to="/create-case">
-                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                    Create Case
-                  </Button>
-                </Link>
-              ) : (
-                <Link to="/register">
-                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                    Join Community
-                  </Button>
-                </Link>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
-            <button className="md:hidden text-foreground" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
-          </div>
-
-          {/* Mobile Navigation */}
-          {isMenuOpen && (
-            <div className="md:hidden py-4 space-y-4">
-              <a href="#features" className="block text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </a>
-              <a href="#how-it-works" className="block text-muted-foreground hover:text-foreground transition-colors">
-                How It Works
-              </a>
-              <a href="#community" className="block text-muted-foreground hover:text-foreground transition-colors">
-                Community
-              </a>
-              <a href="#contact" className="block text-muted-foreground hover:text-foreground transition-colors">
-                Contact
-              </a>
-              <div className="flex flex-col space-y-2 pt-4">
-                {user ? (
-                  <>
-                    <Link to="/dashboard">
-                      <Button variant="outline" className="w-full bg-transparent">
-                        Dashboard
-                      </Button>
-                    </Link>
-                    <Link to="/create-case">
-                      <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
-                        Create Case
-                      </Button>
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link to="/login">
-                      <Button variant="outline" className="w-full bg-transparent">
-                        Login
-                      </Button>
-                    </Link>
-                    <Link to="/register">
-                      <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
-                        Join Community
-                      </Button>
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
-
       {/* Hero Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
@@ -181,7 +81,7 @@ export default function HomePage() {
                 <Link to="/dashboard">
                   <Button
                     size="lg"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover-glow"
                   >
                     Go to Dashboard
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -191,7 +91,7 @@ export default function HomePage() {
                 <Link to="/register">
                   <Button
                     size="lg"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover-glow"
                   >
                     Start Your Journey
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -199,11 +99,114 @@ export default function HomePage() {
                 </Link>
               )}
               <Link to="/about">
-                <Button size="lg" variant="outline">
+                <Button size="lg" variant="outline" className="hover-glow">
                   Learn More
                 </Button>
               </Link>
             </div>
+          </div>
+
+          {/* Community Scene */}
+          <div className="community-scene" aria-hidden="true">
+            <div className="scene-sun"></div>
+            <div className="scene-cloud cloud-1"></div>
+            <div className="scene-cloud cloud-2"></div>
+            <div className="scene-hills"></div>
+
+            <div className="scene-city">
+              <div className="scene-building b1">
+                <span className="scene-window" style={{ top: '18px', left: '12px' }}></span>
+                <span className="scene-window" style={{ top: '18px', right: '12px' }}></span>
+                <span className="scene-window" style={{ top: '42px', left: '12px' }}></span>
+                <span className="scene-window" style={{ top: '42px', right: '12px' }}></span>
+              </div>
+              <div className="scene-building b2">
+                <span className="scene-window" style={{ top: '20px', left: '12px' }}></span>
+                <span className="scene-window" style={{ top: '20px', right: '12px' }}></span>
+                <span className="scene-window" style={{ top: '46px', left: '12px' }}></span>
+                <span className="scene-window" style={{ top: '46px', right: '12px' }}></span>
+                <span className="scene-window" style={{ top: '72px', left: '12px' }}></span>
+                <span className="scene-window" style={{ top: '72px', right: '12px' }}></span>
+              </div>
+              <div className="scene-building b3">
+                <span className="scene-window" style={{ top: '18px', left: '12px' }}></span>
+                <span className="scene-window" style={{ top: '18px', right: '12px' }}></span>
+                <span className="scene-window" style={{ top: '42px', left: '12px' }}></span>
+                <span className="scene-window" style={{ top: '42px', right: '12px' }}></span>
+              </div>
+              <div className="scene-building b4">
+                <span className="scene-window" style={{ top: '20px', left: '12px' }}></span>
+                <span className="scene-window" style={{ top: '20px', right: '12px' }}></span>
+                <span className="scene-window" style={{ top: '46px', left: '12px' }}></span>
+                <span className="scene-window" style={{ top: '46px', right: '12px' }}></span>
+              </div>
+            </div>
+
+            <div className="scene-park"></div>
+            <div className="scene-path"></div>
+
+            <div className="scene-tree" style={{ left: '8%' }}>
+              <div className="trunk"></div>
+              <div className="crown"></div>
+            </div>
+            <div className="scene-tree" style={{ left: '78%' }}>
+              <div className="trunk"></div>
+              <div className="crown"></div>
+            </div>
+
+            <div className="scene-people">
+              <div className="scene-person p1" style={{ left: '10%' }}>
+                <div className="head"></div>
+                <div className="body"></div>
+              </div>
+              <div className="scene-person p2" style={{ left: '35%', animationDelay: '1.5s' }}>
+                <div className="head"></div>
+                <div className="body"></div>
+              </div>
+              <div className="scene-person p3" style={{ left: '60%', animationDelay: '3s' }}>
+                <div className="head"></div>
+                <div className="body"></div>
+              </div>
+            </div>
+
+            <div className="scene-dog" style={{ animationDelay: '2s' }}></div>
+
+            {!sceneClosed && (
+              <div className="scene-overlay">
+                <div className="scene-overlay-card relative">
+                  <button
+                    onClick={handleCloseScene}
+                    className="absolute top-2 right-2 p-1 rounded-full text-slate-500 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+                    aria-label="Close community message"
+                  >
+                    x
+                  </button>
+                  <p className="text-sm uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                    A Peaceful Community
+                  </p>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-white mt-1">
+                    Resolve disputes with empathy, clarity, and community trust.
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
+                    Transparent discussions, fair voting, and respectful outcomes for everyone in your society.
+                  </p>
+                  <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
+                    {user ? (
+                      <Link to="/create-case" className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors hover-glow">
+                        File a Community Case
+                      </Link>
+                    ) : (
+                      <Link to="/register" className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors hover-glow">
+                        Join Your Community
+                      </Link>
+                    )}
+                    <Link to="/about" className="px-4 py-2 rounded-md border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors hover-glow">
+                      Learn the Process
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Stats */}
@@ -259,7 +262,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow hover-lift">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
@@ -269,7 +272,7 @@ export default function HomePage() {
               </CardDescription>
             </Card>
 
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow hover-lift">
               <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Shield className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
@@ -279,7 +282,7 @@ export default function HomePage() {
               </CardDescription>
             </Card>
 
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow hover-lift">
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Gavel className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
@@ -289,7 +292,7 @@ export default function HomePage() {
               </CardDescription>
             </Card>
 
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow hover-lift">
               <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <MessageSquare className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
@@ -299,7 +302,7 @@ export default function HomePage() {
               </CardDescription>
             </Card>
 
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow hover-lift">
               <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <TrendingUp className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
@@ -309,7 +312,7 @@ export default function HomePage() {
               </CardDescription>
             </Card>
 
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow hover-lift">
               <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
               </div>
@@ -427,7 +430,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="bg-card p-8 rounded-2xl shadow-lg">
+            <div className="bg-card p-8 rounded-2xl shadow-lg hover-lift">
               <h3 className="text-2xl font-bold text-foreground mb-6">Community Stats</h3>
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
