@@ -27,6 +27,7 @@ import {
   Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getProfilePicUrl } from '../utils/media';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -169,11 +170,7 @@ const AdminDashboard = () => {
               </Badge>
               <Avatar>
                 <AvatarImage 
-                  src={user?.profilePic ? 
-                    (user.profilePic.startsWith('http') ? user.profilePic : 
-                     user.profilePic.startsWith('/uploads/') ? `http://localhost:5000${user.profilePic}` :
-                     `http://localhost:5000/uploads/${user.profilePic}`) : 
-                    '/default-avatar.svg'} 
+                  src={getProfilePicUrl(user?.profilePic)} 
                   onError={(e) => {
                     e.target.onerror = null;
                     e.target.src = '/default-avatar.svg';
@@ -271,7 +268,7 @@ const AdminDashboard = () => {
                           <td className="py-3 px-4">
                             <div className="flex items-center space-x-3">
                               <Avatar className="h-8 w-8">
-                                <AvatarImage src={userItem.profilePic || '/default-avatar.svg'} />
+                                <AvatarImage src={getProfilePicUrl(userItem.profilePic)} />
                                 <AvatarFallback>{getInitials(userItem.name)}</AvatarFallback>
                               </Avatar>
                               <div>
@@ -371,7 +368,7 @@ const AdminDashboard = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
                               <Avatar>
-                                <AvatarImage src={request.profilePic || '/default-avatar.svg'} />
+                                <AvatarImage src={getProfilePicUrl(request.profilePic)} />
                                 <AvatarFallback>{getInitials(request.name)}</AvatarFallback>
                               </Avatar>
                               <div>
@@ -400,6 +397,15 @@ const AdminDashboard = () => {
                               >
                                 <AlertCircle className="h-3 w-3 mr-1" />
                                 Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleJudgeRequest(request._id, 'member')}
+                                disabled={reviewJudgeRequest.isLoading}
+                              >
+                                <Users className="h-3 w-3 mr-1" />
+                                Make Member
                               </Button>
                             </div>
                           </div>
