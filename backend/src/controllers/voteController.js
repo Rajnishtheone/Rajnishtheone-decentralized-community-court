@@ -34,6 +34,11 @@ export const castVote = async (req, res) => {
         caseItem.votes.push(newVote);
         await caseItem.save();
 
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('case_updated', { caseId: caseItem._id, type: 'vote' });
+        }
+
         res.status(201).json({ message: 'Vote cast successfully', caseItem });
     } catch (error) {
         res.status(500).json({ error: error.message });
