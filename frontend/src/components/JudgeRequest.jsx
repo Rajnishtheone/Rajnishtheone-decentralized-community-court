@@ -57,7 +57,7 @@ const JudgeRequest = ({ onClose, onSuccess }) => {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label htmlFor="reason" className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="reason" className="form-label">
               Reason for Request
             </label>
             <textarea
@@ -74,7 +74,7 @@ const JudgeRequest = ({ onClose, onSuccess }) => {
                   message: 'Reason cannot exceed 500 characters'
                 }
               })}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors resize-none ${
+              className={`form-textarea w-full resize-none ${
                 errors.reason
                   ? 'border-destructive bg-destructive/10'
                   : 'border-border bg-background'
