@@ -1,7 +1,14 @@
 // backend/src/utils/pdfGenerator.js
 
 import PDFDocument from 'pdfkit';
-import getStream from 'get-stream';
+
+const streamToBuffer = (stream) =>
+  new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on('data', (chunk) => chunks.push(chunk));
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+    stream.on('error', reject);
+  });
 
 /**
  * Generate a PDF buffer with case details
@@ -17,11 +24,12 @@ export const generateCasePDFBuffer = async (caseItem) => {
   doc.text(`Description: ${caseItem.description}`);
   doc.text(`Status: ${caseItem.status}`);
   doc.text(`Verdict: ${caseItem.verdict || 'Pending'}`);
-  doc.text(`Created By: ${caseItem.createdBy?.username || 'Unknown'}`);
-  doc.text(`Filed Against: ${caseItem.filedAgainst?.username || 'N/A'}`);
+  doc.text(`Category: ${caseItem.category || 'Other'}`);
+  doc.text(`Priority: ${caseItem.priority || 'Medium'}`);
+  doc.text(`Filed By: ${caseItem.filedBy?.username || 'Unknown'}`);
   doc.text(`Created At: ${new Date(caseItem.createdAt).toLocaleString()}`);
 
   doc.end();
 
-  return await getStream.buffer(doc);
+  return await streamToBuffer(doc);
 };

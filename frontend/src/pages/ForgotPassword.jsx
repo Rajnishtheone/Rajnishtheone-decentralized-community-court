@@ -80,7 +80,7 @@ const ForgotPassword = () => {
           
           <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="email" className="form-label">
                 Email Address
               </label>
               <input
@@ -93,10 +93,10 @@ const ForgotPassword = () => {
                     message: 'Invalid email address'
                   }
                 })}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
+                className={`form-input ${
                   errors.email
-                    ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                    ? 'border-red-300 dark:border-red-600 bg-red-50/40 dark:bg-red-900/20'
+                    : ''
                 }`}
                 placeholder="Enter your email"
               />

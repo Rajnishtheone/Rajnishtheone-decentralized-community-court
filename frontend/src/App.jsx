@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import PrivateRoute from './routes/PrivateRoute.jsx';
 import { useAuth } from './context/AuthContext.jsx';
+import { connectSocket, disconnectSocket } from './lib/socket';
 
 // Layout Components
 import Layout from './components/Layout.jsx';
@@ -32,6 +33,7 @@ import AboutUs from './pages/AboutUs.jsx';
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
 import TermsOfService from './pages/TermsOfService.jsx';
 import Support from './pages/Support.jsx';
+import SocialCircle from './pages/SocialCircle.jsx';
 
 // Styles
 import './index.css';
@@ -60,6 +62,11 @@ function App() {
   // Update metadata on component mount
   React.useEffect(() => {
     updateMetadata();
+  }, []);
+
+  React.useEffect(() => {
+    connectSocket();
+    return () => disconnectSocket();
   }, []);
 
   return (
@@ -115,6 +122,11 @@ function App() {
                   <Route path="/privacy" element={<PrivacyPolicy />} />
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/support" element={<Support />} />
+                  <Route path="/social" element={
+                    <PrivateRoute>
+                      <SocialCircle />
+                    </PrivateRoute>
+                  } />
                   
                   {/* Catch all route */}
                   <Route path="*" element={<Navigate to="/" replace />} />

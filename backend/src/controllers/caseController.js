@@ -16,16 +16,16 @@ import {
 } from '../utils/emailTemplates.js';
 import { generateCasePDFBuffer } from '../utils/pdfGenerator.js';
 
-import { getVerdictSuggestion, generateSummary } from '../utils/aiHelper.js';
+import { getVerdictSuggestion, generateSummary, chatWithCase } from '../utils/aiService.js';
 
 // =======================
 // 1. CREATE CASE (SIMPLIFIED)
 // =======================
 export const createCase = async (req, res) => {
   try {
-    const { 
-      title, 
-      description, 
+    const {
+      title,
+      description,
       category = 'Other',
       priority = 'Medium',
       tags = []
@@ -72,6 +72,11 @@ export const createCase = async (req, res) => {
       message: '✅ Case submitted successfully',
       case: newCase,
     });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('case_updated', { caseId: newCase._id, type: 'created' });
+    }
   } catch (error) {
     console.error('❌ Error in createCase:', error.message);
     res.status(500).json({ error: error.message });
@@ -83,12 +88,12 @@ export const createCase = async (req, res) => {
 // =======================
 export const getAllCases = async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 10, 
-      status, 
+    const {
+      page = 1,
+      limit = 10,
+      status,
       category,
-      search 
+      search
     } = req.query;
 
     const query = {};
@@ -140,8 +145,8 @@ export const getCaseById = async (req, res) => {
     }
 
     const caseItem = await Case.findById(req.params.id)
-      .populate('filedBy', 'username email avatar')
-      .populate('comments.commentedBy', 'username avatar role');
+      .populate('filedBy', 'username email profilePic')
+      .populate('comments.commentedBy', 'username profilePic role');
 
     if (!caseItem) {
       return res.status(404).json({ message: 'Case not found' });
@@ -183,10 +188,15 @@ export const updateCaseVerdict = async (req, res) => {
       html: caseStatusTemplate(filer.username, caseItem.title, 'Verdict Reached', verdict),
     });
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: '✅ Verdict updated successfully',
-      case: caseItem 
+      case: caseItem
     });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('case_updated', { caseId: caseItem._id, type: 'verdict' });
+    }
   } catch (error) {
     console.error('❌ Error in updateCaseVerdict:', error.message);
     res.status(500).json({ error: error.message });
@@ -221,10 +231,15 @@ export const updateCaseStatus = async (req, res) => {
       html: caseStatusTemplate(filer.username, caseItem.title, status),
     });
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: '✅ Case status updated successfully',
-      case: caseItem 
+      case: caseItem
     });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('case_updated', { caseId: caseItem._id, type: 'status' });
+    }
   } catch (error) {
     console.error('❌ Error in updateCaseStatus:', error.message);
     res.status(500).json({ error: error.message });
@@ -266,6 +281,11 @@ export const commentOnCase = async (req, res) => {
       return res.status(404).json({ message: 'Case not found' });
     }
 
+    // Only allow comments on published cases
+    if (caseItem.status !== 'Published for Voting') {
+      return res.status(400).json({ message: 'Comments are only allowed on published cases' });
+    }
+
     const comment = {
       text,
       commentedBy: req.user.id,
@@ -276,10 +296,15 @@ export const commentOnCase = async (req, res) => {
     caseItem.comments.push(comment);
     await caseItem.save();
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: '✅ Comment added successfully',
-      comment 
+      comment
     });
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('case_updated', { caseId: caseItem._id, type: 'comment' });
+    }
   } catch (error) {
     console.error('❌ Error in commentOnCase:', error.message);
     res.status(500).json({ error: error.message });
@@ -302,16 +327,53 @@ export const suggestVerdict = async (req, res) => {
       return res.status(403).json({ message: 'Only admins and judges can request AI verdicts' });
     }
 
-    const suggestion = await getVerdictSuggestion(caseItem);
-    const summary = await generateSummary(caseItem);
+    const suggestion = await getVerdictSuggestion(caseItem.description);
+    const summary = await generateSummary(caseItem.description);
 
-    res.status(200).json({ 
+    res.status(200).json({
       suggestion,
       summary
     });
   } catch (error) {
     console.error('❌ Error in suggestVerdict:', error.message);
     res.status(500).json({ error: error.message });
+  }
+};
+
+// =======================
+// 9. AI CHAT WITH CASE CONTEXT (JUDGE/ADMIN)
+// =======================
+export const aiCaseChat = async (req, res) => {
+  try {
+    // Only admin/judge can use AI chat
+    if (!['admin', 'judge'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Only admins and judges can use AI assistant' });
+    }
+
+    const caseItem = await Case.findById(req.params.id)
+      .populate('filedBy', 'username email')
+      .populate('comments.commentedBy', 'username role');
+
+    if (!caseItem) {
+      return res.status(404).json({ message: 'Case not found' });
+    }
+
+    const { messages = [] } = req.body;
+
+    // If no messages, request a default summary + verdict
+    const safeMessages = Array.isArray(messages) && messages.length > 0
+      ? messages
+      : [{ role: 'user', content: 'Provide a verdict recommendation and a concise case summary.' }];
+
+    const reply = await chatWithCase(caseItem, safeMessages);
+
+    res.status(200).json({ reply });
+  } catch (error) {
+    console.error('❌ Error in aiCaseChat:', error.message);
+    if (`${error.message}`.toLowerCase().includes('quota')) {
+      return res.status(429).json({ message: error.message });
+    }
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -325,11 +387,11 @@ export const getPendingCases = async (req, res) => {
       return res.status(403).json({ message: 'Only admins and judges can view pending cases' });
     }
 
-    const { 
-      page = 1, 
-      limit = 10, 
+    const {
+      page = 1,
+      limit = 10,
       status = 'Pending Review',
-      search 
+      search
     } = req.query;
 
     const query = { status };
@@ -340,7 +402,7 @@ export const getPendingCases = async (req, res) => {
     }
 
     const cases = await Case.find(query)
-      .populate('filedBy', 'username email avatar building flat')
+      .populate('filedBy', 'username email profilePic building flat')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -392,7 +454,7 @@ export const deleteCase = async (req, res) => {
       });
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: '✅ Case deleted successfully'
     });
   } catch (error) {
@@ -448,7 +510,7 @@ export const verifyCase = async (req, res) => {
       });
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: `✅ Case ${action === 'verify' ? 'verified' : 'rejected'} successfully`,
       case: caseItem
     });
@@ -474,12 +536,12 @@ export const getJudgeDashboard = async (req, res) => {
     const resolvedCases = await Case.countDocuments({ status: 'Verdict Reached' });
 
     // Get recent cases for review
-    const recentCases = await Case.find({ 
-      status: { $in: ['Pending Review', 'Under Review'] } 
+    const recentCases = await Case.find({
+      status: { $in: ['Pending Review', 'Under Review'] }
     })
-    .populate('filedBy', 'username email')
-    .sort({ createdAt: -1 })
-    .limit(5);
+      .populate('filedBy', 'username email')
+      .sort({ createdAt: -1 })
+      .limit(5);
 
     res.status(200).json({
       stats: {

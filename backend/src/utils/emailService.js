@@ -1,14 +1,14 @@
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import dotenv from 'dotenv';
-import { 
-  welcomeEmailTemplate, 
+import {
+  welcomeEmailTemplate,
   generateEmailTemplate,
   passwordResetTemplate,
   passwordResetSuccessTemplate,
   judgeRequestTemplate,
   judgeRequestResponseTemplate
-} from './emailTemplates.js'
+} from './emailTemplates.js';
 dotenv.config();
 
 let transporter;
@@ -37,14 +37,28 @@ const emailTemplates = {
   // ... existing templates ...
 }
 
-export const sendEmail = async ({ to, subject, html }) => {
+export const sendEmail = async ({ to, subject, html, template, context }) => {
+  let resolvedHtml = html;
+
+  if (!resolvedHtml && template) {
+    const templateFn = emailTemplates[template];
+    if (!templateFn) {
+      throw new Error(`Email template not found: ${template}`);
+    }
+    resolvedHtml = templateFn(context || {});
+  }
+
+  if (!resolvedHtml) {
+    throw new Error('Email content is required (html or template/context)');
+  }
+
   if (process.env.EMAIL_SERVICE === 'gmail' && transporter) {
     try {
       const info = await transporter.sendMail({
         from: `"DCC Team 👨‍⚖️" <${process.env.EMAIL_USER}>`,
         to,
         subject,
-        html,
+        html: resolvedHtml,
       });
       console.log('✅ Email sent via Gmail:', info.messageId);
     } catch (error) {
@@ -57,7 +71,7 @@ export const sendEmail = async ({ to, subject, html }) => {
         from: 'DCC Team 👨‍⚖️ <onboarding@resend.dev>', // verified sender for Resend
         to,
         subject,
-        html,
+        html: resolvedHtml,
       });
       console.log('✅ Email sent via Resend:', data?.id || 'No ID returned');
     } catch (error) {

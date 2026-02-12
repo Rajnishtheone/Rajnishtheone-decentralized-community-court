@@ -4,12 +4,16 @@
 import React from 'react';
 import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
+import GuestNotice from './GuestNotice.jsx';
 
 const Layout = ({ children }) => {
   return (
     <div className="min-h-screen bg-background text-foreground theme-transition">
       {/* Navbar */}
       <Navbar />
+
+      {/* Guest Notice */}
+      <GuestNotice />
       
       {/* Main Content */}
       <main className="flex-1">

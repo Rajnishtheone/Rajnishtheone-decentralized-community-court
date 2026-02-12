@@ -5,22 +5,21 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/User.js';
 import { sendEmail } from '../utils/emailService.js';
-import { welcomeEmailTemplate } from '../utils/emailTemplates.js';
 import { generateEmailTemplate } from '../utils/emailTemplates.js';
 
 const registerUser = async (req, res) => {
     try {
-        const { 
+        const {
             name,
-            username, 
-            email, 
-            password, 
-            phone, 
-            building, 
-            flat, 
-            dateOfBirth, 
-            gender, 
-            role 
+            username,
+            email,
+            password,
+            phone,
+            building,
+            flat,
+            dateOfBirth,
+            gender,
+            role
         } = req.body;
 
         // Validate required fields
@@ -49,7 +48,10 @@ const registerUser = async (req, res) => {
         // Check if this is the first user
         const userCount = await User.countDocuments();
         let assignedRole = role;
-        
+        let judgeRequestStatus = 'none';
+        let judgeRequestReason = '';
+        let judgeRequestDate = null;
+
         if (userCount === 0) {
             assignedRole = 'admin';
         } else if (!role) {
@@ -57,6 +59,12 @@ const registerUser = async (req, res) => {
         } else if (role === 'admin' && userCount > 0) {
             // Only allow admin role for the first user or if explicitly set by existing admin
             assignedRole = 'member';
+        } else if (role === 'judge') {
+            // Judges must be approved by admin; start as member with pending request
+            assignedRole = 'member';
+            judgeRequestStatus = 'pending';
+            judgeRequestReason = 'Requested judge role during signup';
+            judgeRequestDate = new Date();
         }
 
         // Handle profile picture upload
@@ -78,7 +86,10 @@ const registerUser = async (req, res) => {
             dateOfBirth,
             gender,
             profilePic,
-            role: assignedRole
+            role: assignedRole,
+            judgeRequestStatus,
+            judgeRequestReason,
+            judgeRequestDate
         });
 
         await newUser.save();
@@ -98,9 +109,17 @@ const registerUser = async (req, res) => {
             // Don't fail registration if email fails
         }
 
-        res.status(201).json({ 
-            message: 'User registered successfully', 
+        // Create JWT token
+        const token = jwt.sign(
+            { id: newUser._id, role: newUser.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        res.status(201).json({
+            message: 'User registered successfully',
             role: assignedRole,
+            token,
             user: {
                 id: newUser._id,
                 name: newUser.name,
@@ -113,7 +132,8 @@ const registerUser = async (req, res) => {
                 gender: newUser.gender,
                 age: newUser.age,
                 profilePic: newUser.profilePic,
-                role: newUser.role
+                role: newUser.role,
+                judgeRequestStatus: newUser.judgeRequestStatus
             }
         });
 
@@ -136,17 +156,25 @@ const loginUser = async (req, res) => {
             return res.status(400).json({ message: 'User not found' });
         }
 
+        // If user is Google-only, block password login
+        if (user.isGoogleUser && !user.password) {
+            return res.status(400).json({ message: 'Please login with Google for this account' });
+        }
+
         // Check password
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await bcrypt.compare(password, user.password || '');
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
         // Check if user is trying to login with correct role
         if (role && user.role !== role) {
-            return res.status(400).json({ 
-                message: `Invalid role. Your account is registered as ${user.role}. Please login as ${user.role}.` 
-            });
+            const isPendingJudge = user.role === 'member' && user.judgeRequestStatus === 'pending' && role === 'judge';
+            if (!isPendingJudge) {
+                return res.status(400).json({
+                    message: `Invalid role. Your account is registered as ${user.role}. Please login as ${user.role}.`
+                });
+            }
         }
 
         // Create JWT token
@@ -170,7 +198,8 @@ const loginUser = async (req, res) => {
                 gender: user.gender,
                 age: user.age,
                 profilePic: user.profilePic,
-                role: user.role
+                role: user.role,
+                judgeRequestStatus: user.judgeRequestStatus
             }
         });
     } catch (error) {
@@ -191,7 +220,7 @@ const googleLogin = async (req, res) => {
 
         // Decode the JWT token from Google
         const payload = JSON.parse(Buffer.from(credential.split('.')[1], 'base64').toString());
-        
+
         const { email, name, picture, sub: googleId } = payload;
 
         if (!email) {
@@ -206,7 +235,7 @@ const googleLogin = async (req, res) => {
             // since we don't have the additional profile data from the request
             return res.status(200).json({
                 requiresProfileCompletion: true,
-                googleData: {
+                user: {
                     email,
                     name: name || email.split('@')[0],
                     picture,
@@ -247,7 +276,8 @@ const googleLogin = async (req, res) => {
                 gender: user.gender,
                 age: user.age,
                 profilePic: user.profilePic,
-                role: user.role
+                role: user.role,
+                judgeRequestStatus: user.judgeRequestStatus
             }
         });
     } catch (error) {
@@ -279,8 +309,8 @@ const forgotPassword = async (req, res) => {
         await user.save();
 
         // Send email with reset link
-        const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-        
+        const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
         await sendEmail({
             to: user.email,
             subject: 'Password Reset Request',
@@ -423,7 +453,8 @@ const completeGoogleProfile = async (req, res) => {
                 gender: user.gender,
                 age: user.age,
                 profilePic: user.profilePic,
-                role: user.role
+                role: user.role,
+                judgeRequestStatus: user.judgeRequestStatus
             }
         });
     } catch (error) {

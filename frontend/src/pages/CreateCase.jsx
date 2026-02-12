@@ -58,20 +58,18 @@ const CreateCase = () => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Create New Case</h1>
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 p-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create New Case</h1>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="title" className="form-label">
               Case Title
             </label>
             <input
               type="text"
               id="title"
-              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${
-                errors.title ? 'border-red-300' : ''
-              }`}
+              className={`form-input ${errors.title ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
               placeholder="Enter case title"
               {...register('title', {
                 required: 'Title is required',
@@ -87,15 +85,13 @@ const CreateCase = () => {
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="description" className="form-label">
               Case Description
             </label>
             <textarea
               id="description"
               rows={6}
-              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${
-                errors.description ? 'border-red-300' : ''
-              }`}
+              className={`form-textarea ${errors.description ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : ''}`}
               placeholder="Provide a detailed description of the case..."
               {...register('description', {
                 required: 'Description is required',
@@ -111,16 +107,16 @@ const CreateCase = () => {
           </div>
 
           <div>
-            <label htmlFor="evidence" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="evidence" className="form-label">
               Evidence (Optional)
             </label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-              <div className="space-y-1 text-center">
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="flex text-sm text-gray-600">
+            <div className="mt-2 flex justify-center px-6 pt-6 pb-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50/80 dark:bg-slate-950/40">
+              <div className="space-y-2 text-center">
+                <Upload className="mx-auto h-12 w-12 text-slate-400" />
+                <div className="flex flex-col sm:flex-row items-center justify-center text-sm text-slate-600 dark:text-slate-400">
                   <label
                     htmlFor="file-upload"
-                    className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
+                    className="relative cursor-pointer rounded-md font-semibold text-blue-600 hover:text-blue-700 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
                   >
                     <span>Upload a file</span>
                     <input
@@ -134,13 +130,13 @@ const CreateCase = () => {
                   </label>
                   <p className="pl-1">or drag and drop</p>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-500">
                   PNG, JPG, PDF up to 10MB
                 </p>
               </div>
             </div>
             {selectedFile && (
-              <div className="mt-2 flex items-center text-sm text-gray-600">
+              <div className="mt-2 flex items-center text-sm text-slate-600 dark:text-slate-300">
                 <FileText className="h-4 w-4 mr-1" />
                 {selectedFile.name}
               </div>
@@ -151,14 +147,14 @@ const CreateCase = () => {
             <button
               type="button"
               onClick={() => navigate('/cases')}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-md text-sm font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createCaseMutation.isLoading}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {createCaseMutation.isLoading ? 'Creating...' : 'Create Case'}
             </button>

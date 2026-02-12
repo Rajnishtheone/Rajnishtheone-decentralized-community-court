@@ -61,6 +61,16 @@ const userSchema = new mongoose.Schema({
     enum: ['admin', 'judge', 'member'], 
     default: 'member' 
   },
+
+  // Social circle fields
+  friends: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: []
+  },
+  blockedUsers: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: []
+  },
   
   // Google OAuth fields
   googleId: {
@@ -145,5 +155,7 @@ userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ 'judgeRequest.status': 1 });
 userSchema.index({ isGoogleUser: 1 });
+userSchema.index({ friends: 1 });
+userSchema.index({ blockedUsers: 1 });
 
 export default mongoose.model('User', userSchema);

@@ -1,17 +1,16 @@
 import React, { useState } from 'react'
-import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 
 const ResetPassword = () => {
   const [isLoading, setIsLoading] = useState(false)
-  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { resetPassword } = useAuth()
-  
-  const token = searchParams.get('token')
-  
+
+  const { token } = useParams()
+
   const {
     register,
     handleSubmit,
@@ -88,10 +87,10 @@ const ResetPassword = () => {
               Enter your new password below.
             </p>
           </div>
-          
+
           <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="password" className="form-label">
                 New Password
               </label>
               <input
@@ -104,11 +103,10 @@ const ResetPassword = () => {
                     message: 'Password must be at least 6 characters'
                   }
                 })}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                  errors.password
-                    ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                }`}
+                className={`form-input ${errors.password
+                    ? 'border-red-300 dark:border-red-600 bg-red-50/40 dark:bg-red-900/20'
+                    : ''
+                  }`}
                 placeholder="Enter new password"
               />
               {errors.password && (
@@ -119,7 +117,7 @@ const ResetPassword = () => {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="confirmPassword" className="form-label">
                 Confirm New Password
               </label>
               <input
@@ -129,11 +127,10 @@ const ResetPassword = () => {
                   required: 'Please confirm your password',
                   validate: value => value === password || 'Passwords do not match'
                 })}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                  errors.confirmPassword
-                    ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
-                }`}
+                className={`form-input ${errors.confirmPassword
+                    ? 'border-red-300 dark:border-red-600 bg-red-50/40 dark:bg-red-900/20'
+                    : ''
+                  }`}
                 placeholder="Confirm new password"
               />
               {errors.confirmPassword && (

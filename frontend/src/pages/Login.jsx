@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Scale, AlertCircle } from 'lucide-react'
+import { useTheme } from '../context/ThemeContext.jsx'
+import { Eye, EyeOff, Mail, Lock, ArrowLeft, Scale, AlertCircle, CheckCircle } from 'lucide-react'
 import TermsModal from '../components/TermsModal'
 import { GoogleLogin } from '@react-oauth/google'
 import toast from 'react-hot-toast'
@@ -10,7 +11,7 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: 'member' // Default role for login
+    role: 'member'
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -18,6 +19,7 @@ const Login = () => {
   const [showTerms, setShowTerms] = useState(false)
 
   const { login, googleLogin } = useAuth()
+  const { isDark } = useTheme()
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -26,7 +28,6 @@ const Login = () => {
       ...prev,
       [name]: value
     }))
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -37,37 +38,37 @@ const Login = () => {
 
   const validateForm = () => {
     const newErrors = {}
-    
+
     if (!formData.email) {
       newErrors.email = 'Email is required'
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid'
     }
-    
+
     if (!formData.password) {
       newErrors.password = 'Password is required'
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters'
     }
-    
+
     if (!formData.role) {
       newErrors.role = 'Role is required'
     }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
     if (!validateForm()) return
-    
+
     setIsLoading(true)
-    
+
     try {
       const result = await login(formData.email, formData.password, formData.role)
-      
+
       if (result.success) {
         toast.success(`Login successful! Welcome ${result.user?.role || 'User'}`)
         navigate('/dashboard')
@@ -84,10 +85,11 @@ const Login = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const result = await googleLogin(credentialResponse)
-      
+
       if (result.success) {
         if (result.requiresProfileCompletion) {
           toast.success('Please complete your profile')
+          navigate('/complete-profile', { state: { googleData: result.googleData } })
         } else {
           toast.success('Google login successful!')
           navigate('/dashboard')
@@ -106,34 +108,57 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <Link to="/" className="inline-flex items-center space-x-2 mb-6">
-            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            <span className="text-gray-600 dark:text-gray-400">Back to Home</span>
-          </Link>
-          
-          <div className="flex justify-center mb-6">
-            <div className="p-3 bg-indigo-100 dark:bg-indigo-900 rounded-full">
-              <Scale className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+      <div className="w-full max-w-5xl bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-2">
+        <div className="hidden lg:flex flex-col justify-between p-10 bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-600 text-white">
+          <div>
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="p-3 bg-white/10 rounded-full">
+                <Scale className="h-7 w-7" />
+              </div>
+              <span className="text-2xl font-semibold">DCC Court</span>
+            </div>
+            <h2 className="text-3xl font-semibold leading-tight">
+              Welcome back to community justice.
+            </h2>
+            <p className="mt-4 text-white/80">
+              Review cases, cast votes, and collaborate with neighbors to resolve disputes fairly.
+            </p>
+            <div className="mt-8 space-y-3 text-sm">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Secure access for members, judges, and admins
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Real-time case updates with community insights
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                AI-guided verdict summaries for clarity
+              </div>
             </div>
           </div>
-          
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Welcome Back
-          </h2>
+          <div className="text-xs text-white/70">
+            Need access? Register as a community member to get started.
+          </div>
+        </div>
+
+        <div className="p-8 sm:p-10">
+          <div className="flex items-center justify-between mb-6">
+            <Link to="/" className="inline-flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Home</span>
+            </Link>
+          </div>
+
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome Back</h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Sign in to your DCC Court account
           </p>
-        </div>
 
-        {/* Login Form */}
-        <div className="bg-white dark:bg-gray-800 py-8 px-6 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
+          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="email" className="form-label">
                 Email Address
               </label>
               <div className="relative">
@@ -148,11 +173,7 @@ const Login = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.email 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input pl-10 pr-3 ${errors.email ? 'border-red-300 dark:border-red-600' : ''}`}
                   placeholder="Enter your email"
                 />
               </div>
@@ -164,9 +185,8 @@ const Login = () => {
               )}
             </div>
 
-            {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="password" className="form-label">
                 Password
               </label>
               <div className="relative">
@@ -181,11 +201,7 @@ const Login = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-10 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.password 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input pl-10 pr-10 ${errors.password ? 'border-red-300 dark:border-red-600' : ''}`}
                   placeholder="Enter your password"
                 />
                 <button
@@ -208,9 +224,8 @@ const Login = () => {
               )}
             </div>
 
-            {/* Role Selection */}
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="role" className="form-label">
                 Login as
               </label>
               <div className="relative">
@@ -223,11 +238,7 @@ const Login = () => {
                   required
                   value={formData.role}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    errors.role 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+                  className={`form-input pl-10 pr-3 ${errors.role ? 'border-red-300 dark:border-red-600' : ''}`}
                 >
                   <option value="member">Community Member</option>
                   <option value="judge">Judge</option>
@@ -245,7 +256,6 @@ const Login = () => {
               )}
             </div>
 
-            {/* Forgot Password Link */}
             <div className="flex items-center justify-between">
               <div className="text-sm">
                 <Link
@@ -257,11 +267,10 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-base font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
                 <div className="flex items-center">
@@ -274,8 +283,7 @@ const Login = () => {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="mt-6">
+          <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300 dark:border-gray-600" />
@@ -288,21 +296,23 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Google Login - Temporarily Disabled */}
-          {/* <div className="mt-6">
+          <div
+            className="mt-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 shadow-sm"
+            style={{ colorScheme: isDark ? 'dark' : 'light' }}
+          >
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
-              theme="outline"
+              theme={isDark ? 'filled_black' : 'outline'}
               size="large"
               text="signin_with"
               shape="rectangular"
               useOneTap={false}
               context="signin"
+              width="100%"
             />
-          </div> */}
+          </div>
 
-          {/* Terms and Privacy */}
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">
               By signing in, you agree to our{' '}
@@ -321,26 +331,24 @@ const Login = () => {
               </Link>
             </p>
           </div>
-        </div>
 
-        {/* Sign Up Link */}
-        <div className="text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Don't have an account?{' '}
-            <Link
-              to="/register"
-              className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
-            >
-              Sign up here
-            </Link>
-          </p>
+          <div className="text-center mt-6">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Don't have an account?{' '}
+              <Link
+                to="/register"
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+              >
+                Sign up here
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Terms Modal */}
       <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
     </div>
   )
 }
 
-export default Login 
+export default Login

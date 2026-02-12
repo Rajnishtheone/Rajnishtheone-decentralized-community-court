@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../lib/api';
+import { socket } from '../lib/socket';
+import { getProfilePicUrl } from '../utils/media';
+import JudgeRequest from '../components/JudgeRequest';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -24,7 +27,7 @@ import {
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, cancelJudgeRequest, requestJudgeRole } = useAuth();
   const queryClient = useQueryClient();
   const [stats, setStats] = useState({
     totalCases: 0,
@@ -34,6 +37,7 @@ export default function Dashboard() {
     weeklyLimit: 1,
     casesThisWeek: 0,
   });
+  const [showJudgeRequest, setShowJudgeRequest] = useState(false);
 
   // Fetch user dashboard data
   const { data: dashboardData, isLoading } = useQuery(
@@ -48,7 +52,7 @@ export default function Dashboard() {
           totalCases: data.filedCases?.length || 0,
           activeCases: data.filedCases?.filter(c => c.status === 'Published for Voting').length || 0,
           votesGiven: data.totalVotes || 0,
-          commentsPosted: data.commentActivity?.length || 0,
+          commentsPosted: data.commentCount || 0,
           weeklyLimit: 1,
           casesThisWeek: data.filedCases?.filter(c => {
             const weekAgo = new Date();
@@ -106,6 +110,17 @@ export default function Dashboard() {
   const publishedCases = dashboardData?.publishedCases || [];
   const userFiledCases = dashboardData?.filedCases || [];
 
+  useEffect(() => {
+    const handleUpdate = () => {
+      queryClient.invalidateQueries('dashboard');
+      queryClient.invalidateQueries('cases');
+    };
+    socket.on('case_updated', handleUpdate);
+    return () => {
+      socket.off('case_updated', handleUpdate);
+    };
+  }, [queryClient]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -118,6 +133,31 @@ export default function Dashboard() {
     if (user?.role === 'admin') return 'Admin';
     if (user?.role === 'judge') return 'Judge';
     return 'Community Member';
+  };
+
+  const handleCancelJudgeRequest = async () => {
+    const result = await cancelJudgeRequest();
+    if (result.success) {
+      toast.success('Judge request cancelled');
+      queryClient.invalidateQueries('dashboard');
+    } else {
+      toast.error(result.error || 'Failed to cancel request');
+    }
+  };
+
+  const handleJudgeRequest = async (reason) => {
+    try {
+      const result = await requestJudgeRole(reason);
+      if (result.success) {
+        toast.success('Judge request submitted');
+        queryClient.invalidateQueries('dashboard');
+        setShowJudgeRequest(false);
+      } else {
+        toast.error(result.error || 'Failed to submit judge request');
+      }
+    } catch (error) {
+      toast.error('Failed to submit judge request');
+    }
   };
 
   const getInitials = (name) => {
@@ -140,17 +180,13 @@ export default function Dashboard() {
                 {getUserRoleDisplay()}
               </Badge>
               <Avatar>
-                              <AvatarImage 
-                src={user?.profilePic ? 
-                  (user.profilePic.startsWith('http') ? user.profilePic : 
-                   user.profilePic.startsWith('/uploads/') ? `http://localhost:5000${user.profilePic}` :
-                   `http://localhost:5000/uploads/${user.profilePic}`) : 
-                  '/default-avatar.svg'} 
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = '/default-avatar.svg';
-                }}
-              />
+                <AvatarImage 
+                  src={getProfilePicUrl(user?.profilePic)} 
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/default-avatar.svg';
+                  }}
+                />
                 <AvatarFallback>{getInitials(user?.name || user?.username)}</AvatarFallback>
               </Avatar>
             </div>
@@ -227,7 +263,7 @@ export default function Dashboard() {
 
               <TabsContent value="active" className="space-y-4">
                 {publishedCases.map((case_) => (
-                  <Card key={case_._id} className="hover:shadow-md transition-shadow">
+                  <Card key={case_._id} className="hover:shadow-md transition-shadow hover-lift">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -411,6 +447,34 @@ export default function Dashboard() {
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
+            {/* Judge Request Status */}
+            {user?.role === 'member' && user?.judgeRequestStatus === 'pending' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Judge Request</CardTitle>
+                  <CardDescription>Your request is pending admin approval.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
+                  <Button variant="outline" onClick={handleCancelJudgeRequest}>
+                    Cancel Request
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {user?.role === 'member' && user?.judgeRequestStatus === 'approved' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Judge Request</CardTitle>
+                  <CardDescription>Your request has been approved.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Badge className="bg-green-100 text-green-800">Approved</Badge>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Weekly Limit */}
             <Card>
               <CardHeader>
@@ -457,10 +521,20 @@ export default function Dashboard() {
                     Provide Feedback
                   </Button>
                 </Link>
-                {user?.role === 'member' && (
-                  <Button className="w-full justify-start bg-transparent" variant="outline">
+                {user?.role === 'member' && (!user?.judgeRequestStatus || user?.judgeRequestStatus === 'none') && (
+                  <Button
+                    className="w-full justify-start bg-transparent"
+                    variant="outline"
+                    onClick={() => setShowJudgeRequest(true)}
+                  >
                     <Scale className="h-4 w-4 mr-2" />
                     Request Judge Role
+                  </Button>
+                )}
+                {user?.role === 'member' && user?.judgeRequestStatus === 'pending' && (
+                  <Button className="w-full justify-start bg-transparent" variant="outline" disabled>
+                    <Scale className="h-4 w-4 mr-2" />
+                    Judge Request Pending
                   </Button>
                 )}
               </CardContent>
@@ -504,6 +578,13 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {showJudgeRequest && (
+        <JudgeRequest
+          onClose={() => setShowJudgeRequest(false)}
+          onSuccess={handleJudgeRequest}
+        />
+      )}
     </div>
   );
 } 
